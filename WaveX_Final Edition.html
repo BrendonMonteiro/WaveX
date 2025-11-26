@@ -1,0 +1,3809 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WaveX - O futuro começa agora!</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="https://i.imgur.com/dYDYcjX.png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Kanit:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700&family=Space+Grotesk:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300&family=Pinyon+Script&display=swap" rel="stylesheet">
+    
+    <!-- Icons (Phosphor Icons) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* --- 1. CORE VARIABLES & RESET --- */
+        :root {
+            /* Palette */
+            --primary: #68A7B9;
+            --primary-light: #94d6e9;
+            --primary-dark: #3e6d7a;
+            --accent: #FFFFFF;
+            
+            /* Backgrounds */
+            --bg-dark: #050505;
+            --bg-card: rgba(20, 23, 26, 0.95);
+            
+            /* UI Elements */
+            --border-light: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(104, 167, 185, 0.4);
+            --shadow-glow: 0 0 20px rgba(104, 167, 185, 0.25);
+            
+            /* Animation */
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body, html {
+            width: 100%; height: 100%;
+            background-color: var(--bg-dark);
+            color: #ececec;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            cursor: default;
+            /* BLOQUEIO DE ARRASTAR (Overscroll) NO MOBILE */
+            overscroll-behavior-y: none;
+            position: fixed; /* Ajuda a travar o scroll elástico no iOS */
+        }
+        
+        /* Scroll apenas dentro das páginas */
+        .app-container {
+            width: 100%; height: 100%;
+            position: relative;
+            display: flex; flex-direction: column;
+            z-index: 2;
+        }
+
+        /* BACKGROUND */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.8s var(--ease-out-expo);
+        }
+        ::selection {
+            background: var(--primary);
+            color: #000;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; transition: 0.3s; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+        a { text-decoration: none; color: inherit; transition: 0.3s; }
+        ul { list-style: none; }
+        img { display: block; max-width: 100%; user-select: none; }
+
+        /* --- LOADING SCREEN --- */
+        #site-loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 99999;
+            background: #050505;
+            background-image: 
+                linear-gradient(rgba(104, 167, 185, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(104, 167, 185, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: all;
+            -webkit-mask-image: radial-gradient(circle, transparent 0%, black 0%);
+            mask-image: radial-gradient(circle, transparent 0%, black 0%);
+            transition: -webkit-mask-image 1.5s cubic-bezier(0.65, 0, 0.35, 1),
+                        mask-image 1.5s cubic-bezier(0.65, 0, 0.35, 1),
+                        opacity 0.5s ease 1.2s;
+        }
+        #site-loader.hidden {
+            -webkit-mask-image: radial-gradient(circle, transparent 150%, black 150%);
+            mask-image: radial-gradient(circle, transparent 150%, black 150%);
+            opacity: 0; 
+            pointer-events: none;
+        }
+        .loader-content {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            transition: opacity 0.5s ease;
+            position: relative;
+        }
+        #site-loader.hidden .loader-content { opacity: 0; }
+        .loader-logo-wrapper {
+            position: relative;
+            width: 120px; height: 120px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 30px;
+        }
+        .loader-logo {
+            width: 100%; height: auto;
+            filter: drop-shadow(0 0 15px rgba(104, 167, 185, 0.4));
+            animation: holoPulse 2s infinite ease-in-out;
+            z-index: 2;
+        }
+        .loader-scan-line {
+            position: absolute; top: 0; left: -10%; width: 120%; height: 2px;
+            background: var(--primary);
+            box-shadow: 0 0 15px var(--primary), 0 0 5px #fff;
+            animation: scanDown 2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+            opacity: 0;
+            z-index: 3;
+        }
+        .loader-text-container {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            font-family: 'Space Grotesk', monospace;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 15px;
+        }
+        .loader-status {
+            color: #fff; font-size: 14px; font-weight: 700;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+        .loader-subtext {
+            color: var(--primary); font-size: 10px; opacity: 0.7;
+            animation: blinkText 0.5s infinite alternate;
+        }
+        .loader-progress-track {
+            width: 240px; height: 2px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+        .loader-progress-fill {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: var(--primary);
+            box-shadow: 0 0 15px var(--primary);
+            animation: loadProgress 1.8s ease-in-out forwards;
+        }
+        @keyframes holoPulse {
+            0%, 100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 15px rgba(104,167,185,0.4)); }
+            50% { opacity: 0.8; transform: scale(0.98); filter: drop-shadow(0 0 25px rgba(104,167,185,0.6)); }
+            52% { opacity: 0.6; transform: translateX(-1px); }
+            54% { opacity: 0.9; transform: translateX(1px); }
+        }
+        @keyframes scanDown {
+            0% { top: 0%; opacity: 0; }
+            15% { opacity: 1; }
+            85% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        @keyframes blinkText { from { opacity: 0.4; } to { opacity: 1; } }
+        @keyframes loadProgress {
+            0% { width: 0%; }
+            30% { width: 40%; }
+            60% { width: 65%; }
+            100% { width: 100%; }
+        }
+
+        /* --- CUSTOM CURSOR FOLLOWER --- */
+        .custom-cursor {
+            position: fixed;
+            width: 10px; height: 10px;
+            background-color: transparent;
+            border: 1px solid var(--primary);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background-color 0.2s, border-color 0.2s;
+            mix-blend-mode: screen;
+            display: none; /* Inicia oculto, JS ativa no modo Turbo */
+        }
+        .custom-cursor.hovered {
+            width: 30px; height: 30px;
+            background-color: rgba(104, 167, 185, 0.2);
+            border-color: transparent;
+        }
+
+        /* --- 2. ANIMATIONS --- */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes textShine {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes buttonShine {
+            0% { left: -100%; opacity: 0; }
+            20% { left: 100%; opacity: 0.6; }
+            100% { left: 100%; opacity: 0; }
+        }
+        .animate-enter { animation: slideUp 0.8s var(--ease-out-expo) forwards; opacity: 0; will-change: transform, opacity; }
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+        .shake { animation: shake 0.3s; }
+
+        /* --- 3. LAYOUT & PAGES --- */
+        .page {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column;
+            overflow-y: auto; overflow-x: hidden;
+            padding-top: 100px;
+            background: rgba(5, 5, 5, 0.85); 
+            opacity: 0; 
+            transition: opacity 0.4s var(--ease-out-expo), transform 0.4s var(--ease-out-expo);
+            transform: translateY(10px);
+            overscroll-behavior: contain;
+        }
+        #home {
+            background: radial-gradient(circle at center, #0a1a20 0%, #050505 100%) !important;
+        }
+        .page.active { 
+            display: flex; 
+            opacity: 1; 
+            transform: translateY(0);
+        }
+
+        /* --- 4. NAVBAR (DESKTOP) --- */
+        .navbar {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 16px;
+            background: rgba(15, 23, 28, 0.65); 
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 100px;
+            z-index: 1000;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.4s var(--ease-out-expo);
+            width: max-content;
+            max-width: 95%;
+        }
+        .navbar:hover { 
+            background: rgba(15, 23, 28, 0.8);
+            border-color: rgba(104, 167, 185, 0.3); 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15);
+            transform: translateX(-50%) translateY(-2px);
+        }
+        .nav-logo {
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            margin-right: -3px;
+            margin-left: 7px;
+            position: relative;
+        }
+        .nav-logo img {
+            width: 100%; height: 100%; object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(104, 167, 185, 0.8));
+        }
+        .nav-item {
+            position: relative;
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: rgba(255, 255, 255, 0.5);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .nav-item i { font-size: 20px; transition: 0.3s; position: relative; z-index: 2;}
+        .nav-item:hover { 
+            background: rgba(255, 255, 255, 0.08); 
+            color: #fff; 
+            transform: scale(1.05) translateY(-1px);
+        }
+        .nav-item.active {
+            background: rgba(104, 167, 185, 0.15);
+            color: var(--primary-light);
+            border: 1px solid rgba(104, 167, 185, 0.4);
+            box-shadow: 0 0 20px rgba(104, 167, 185, 0.2), inset 0 0 10px rgba(104, 167, 185, 0.05);
+        }
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            bottom: -6px; left: 50%; transform: translateX(-50%);
+            width: 4px; height: 4px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--primary);
+        }
+        .nav-item::after {
+            content: attr(data-tooltip);
+            position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%) translateY(10px);
+            background: #111; color: var(--primary-light);
+            padding: 5px 12px; border-radius: 6px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+            border: 1px solid rgba(104, 167, 185, 0.3);
+            opacity: 0; pointer-events: none; transition: 0.3s var(--ease-out-expo);
+            white-space: nowrap; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            z-index: 1002;
+        }
+        .nav-item:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .nav-sep { width: 1px; height: 24px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.15), transparent); margin: 0 8px; }
+
+        /* --- MOBILE SIDEBAR MENU --- */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed; top: 20px; left: 20px;
+            width: 44px; height: 44px;
+            background: rgba(20, 23, 26, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            align-items: center; justify-content: center;
+            color: #fff; font-size: 24px;
+            z-index: 9000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        /* Efeito de sumir ícone quando aberto */
+        .mobile-menu-toggle.hidden-icon {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.8);
+        }
+
+        .mobile-menu-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            z-index: 8998;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+        .mobile-menu-backdrop.active { opacity: 1; pointer-events: auto; }
+        .mobile-menu-drawer {
+            position: fixed; top: 0; left: 0; width: 280px; height: 100%;
+            background: #0a0a0a;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            z-index: 8999;
+            transform: translateX(-100%);
+            transition: transform 0.4s var(--ease-out-expo);
+            display: flex; flex-direction: column;
+            padding: 30px 20px;
+            
+            /* FIX RESPONSIVIDADE HORIZONTAL (SCROLL) */
+            overflow-y: auto; 
+            overscroll-behavior: contain;
+        }
+        .mobile-menu-drawer.active { transform: translateX(0); }
+        .mobile-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .mobile-logo img { width: 40px; height: auto; filter: drop-shadow(0 0 10px rgba(104,167,185,0.5)); }
+        .mobile-logo span { font-family: 'Kanit'; font-size: 24px; color: #fff; font-weight: 700; }
+        .mobile-nav-list { display: flex; flex-direction: column; gap: 15px; flex: 1; }
+        .mobile-nav-item {
+            display: flex; align-items: center; gap: 15px;
+            color: #888; padding: 12px 15px;
+            border-radius: 12px; transition: 0.3s;
+            font-family: 'Kanit'; font-size: 16px; text-transform: uppercase; letter-spacing: 1px;
+            flex-shrink: 0; /* Prevents shrinking in small vertical spaces */
+        }
+        .mobile-nav-item i { font-size: 22px; }
+        .mobile-nav-item.active, .mobile-nav-item:hover {
+            background: rgba(104, 167, 185, 0.1);
+            color: var(--primary);
+            border: 1px solid rgba(104, 167, 185, 0.2);
+        }
+        .mobile-footer-controls {
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 20px;
+            margin-top: 20px;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 9000;
+        }
+        .mobile-perf-btn {
+            display: flex; align-items: center; gap: 15px;
+            padding: 15px; background: #111;
+            border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+            color: #fff; cursor: pointer; transition: 0.3s;
+        }
+        .mobile-perf-btn i { font-size: 20px; color: var(--primary); }
+        .mobile-perf-status { font-size: 12px; font-weight: 600; text-transform: uppercase; color: #666; }
+        .mobile-perf-val { font-size: 14px; font-weight: 700; color: #fff; }
+
+        /* --- BUTTONS --- */
+        .home-btn-group { display: flex; gap: 15px; justify-content: flex-start; flex-wrap: wrap; }
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 12px;
+            padding: 16px 36px;
+            background: linear-gradient(135deg, #5a97a8 0%, #386875 100%);
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(88, 151, 168, 0.25), inset 0 1px 0 rgba(255,255,255,0.2);
+            font-family: 'Kanit', sans-serif; font-weight: 600; font-size: 15px; letter-spacing: 0.8px; text-transform: uppercase;
+            border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);
+            position: relative; overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            cursor: pointer; user-select: none;
+        }
+        .btn-primary::before {
+            content: '';
+            position: absolute; top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: skewX(-20deg);
+        }
+        .btn-primary:hover { 
+            transform: translateY(-3px) scale(1.02);
+            background: linear-gradient(135deg, #68A7B9 0%, #4a7f8f 100%);
+            box-shadow: 0 15px 40px rgba(104, 167, 185, 0.4), 0 0 0 2px rgba(104, 167, 185, 0.2);
+            border-color: rgba(255,255,255,0.3);
+        }
+        .btn-primary:hover::before { animation: buttonShine 0.7s; }
+        .btn-primary:active { transform: translateY(1px) scale(0.98); box-shadow: 0 5px 15px rgba(104, 167, 185, 0.3); }
+        .btn-secondary {
+            display: inline-flex; align-items: center; gap: 12px;
+            padding: 16px 36px;
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(5px);
+            color: #ccc; 
+            border: 1px solid rgba(255,255,255,0.1);
+            font-family: 'Kanit', sans-serif; font-weight: 600; font-size: 15px; letter-spacing: 0.8px; text-transform: uppercase;
+            border-radius: 14px; transition: 0.3s; position: relative; overflow: hidden;
+            cursor: pointer; user-select: none;
+        }
+        .btn-secondary:hover { 
+            background: rgba(255,255,255,0.08); 
+            color: #fff; border-color: rgba(255,255,255,0.5); 
+            transform: translateY(-3px); 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .btn-secondary:active { transform: translateY(1px); }
+
+        /* --- HOME --- */
+        #home {
+            display: flex;
+            flex-direction: row;
+            justify-content: center; 
+            align-items: center;
+            padding: 0 10%;
+            gap: 50px;
+            overflow: hidden;
+        }
+        .hero-content { 
+            z-index: 2; 
+            max-width: 600px; 
+            text-align: left;
+            flex: 1;
+        }
+        .hero-image-container {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+        .hero-img-character {
+            max-height: 85vh;
+            object-fit: contain;
+            transform: rotate(6.3deg) scale(-1, 1); 
+            filter: drop-shadow(0 0 50px rgba(104, 167, 185, 0.15));
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+            animation: fadeIn 1s ease forwards;
+            transition: transform 0.6s var(--ease-out-expo), filter 0.6s var(--ease-out-expo);
+        }
+        .hero-image-container:hover .hero-img-character {
+            transform: rotate(4deg) scale(-1.03, 1.03);
+            filter: drop-shadow(0 0 30px rgba(104, 167, 185, 0.4));
+        }
+        .badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 16px; border-radius: 50px;
+            background: rgba(104, 167, 185, 0.1);
+            border: 1px solid rgba(104, 167, 185, 0.3);
+            color: var(--primary); font-size: 12px; font-weight: 600; letter-spacing: 1px;
+            margin-bottom: 20px; 
+            box-shadow: 0 0 15px rgba(104, 167, 185, 0.1);
+        }
+        .hero-title {
+            font-family: 'Kanit', sans-serif;
+            font-size: clamp(40px, 6vw, 100px);
+            line-height: 0.9; font-weight: 800; font-style: italic;
+            background: linear-gradient(90deg, #ffffff 0%, #a4dbe9 25%, #68A7B9 50%, #a4dbe9 75%, #ffffff 100%);
+            background-size: 200% auto;
+            background-clip: text; 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 10px 40px rgba(104,167,185,0.2);
+            margin-bottom: 20px;
+            animation: textShine 5s linear infinite;
+        }
+        .hero-desc {
+            font-size: 16px; color: #bbb; max-width: 500px; margin-bottom: 40px;
+            line-height: 1.6; font-weight: 300;
+        }
+
+        /* --- HISTÓRIA --- */
+        #historia { flex-direction: row; padding-top: 0; }
+        .hist-left {
+            width: 30%; height: 100%;
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('https://i.imgur.com/p7Oi5yy.png');
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 60px; position: relative;
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        .hist-left::before { content:''; position: absolute; inset: 0; background: rgba(104, 167, 185, 0.15); mix-blend-mode: color; }
+        .hist-title h2 { font-family: 'Kanit'; font-size: 50px; line-height: 1; color: #fff; text-transform: uppercase; }
+        .hist-title span { display: block; font-weight: 300; font-size: 24px; opacity: 0.7; letter-spacing: 2px; }
+        .hist-right {
+            width: 70%; height: 100%;
+            padding: 140px 80px 40px 60px;
+            display: flex; flex-direction: column; 
+            justify-content: flex-start;
+            background: transparent;
+            position: relative;
+        }
+        .year-display {
+            font-family: 'Kanit'; 
+            font-size: 80px;
+            font-weight: 800; line-height: 0.8;
+            color: transparent; -webkit-text-stroke: 2px rgba(255,255,255,0.1);
+            position: relative; margin-bottom: 10px;
+        }
+        .year-display::after {
+            content: attr(data-year); position: absolute; left: 0; top: 0;
+            color: var(--primary); clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+            animation: slideUp 1s ease forwards;
+        }
+        .hist-content-box { max-width: 650px; }
+        .hist-text { 
+            font-size: 15px;
+            color: #ccc; line-height: 1.6; 
+            margin-bottom: 30px;
+            min-height: 80px; 
+        }
+        .leaders-section-title { font-family: 'Kanit'; font-size: 14px; color: #666; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 1px;}
+        .leaders-grid { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 25px; 
+            transition: opacity 0.5s ease;
+            justify-content: flex-start;
+            max-width: 600px;
+        }
+        .leader-card {
+            width: 160px; 
+            height: 240px; 
+            position: relative; 
+            z-index: 1;
+            cursor: pointer;
+        }
+        .leader-card-inner {
+            width: 100%; height: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #111;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column;
+            position: relative;
+            transition: all 0.4s var(--ease-out-expo);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .leader-card:hover .leader-card-inner {
+            transform: translateY(-8px) scale(1.02);
+            border-color: var(--primary);
+            box-shadow: 0 15px 40px rgba(104, 167, 185, 0.2), 0 0 0 1px var(--primary);
+        }
+        .leader-card img { 
+            width: 100%; height: 100%; object-fit: cover; 
+            object-position: top center;
+            opacity: 0.9; 
+            filter: grayscale(100%); 
+            transition: 0.5s ease; 
+            flex-grow: 1; 
+        }
+        .leader-card:hover img { opacity: 1; filter: grayscale(0%); transform: scale(1.05); }
+        .leader-info {
+            position: absolute; bottom: 0; left: 0; width: 100%; padding: 15px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 20%, transparent);
+            transition: 0.3s; transform: translateY(5px);
+        }
+        .leader-card:hover .leader-info { transform: translateY(0); background: linear-gradient(to top, #000 60%, transparent); }
+        .leader-name { font-size: 14px; font-weight: 700; color: #fff; font-family: 'Kanit'; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+        .leader-role { font-size: 11px; color: var(--primary); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+        .leader-date { 
+            position: absolute; top: 12px; right: 12px; 
+            background: rgba(0,0,0,0.6); 
+            padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+            font-size: 10px; color: #aaa; font-weight: 600; z-index: 5; transition: 0.3s;
+        }
+        .leader-card:hover .leader-date { border-color: var(--primary); color: #fff; background: rgba(104, 167, 185, 0.2); }
+        .leader-tooltip {
+            position: absolute; bottom: 100%; left: 50%;
+            transform: translateX(-50%) translateY(10px) scale(0.8);
+            background: rgba(10, 10, 10, 0.95); border: 1px solid var(--primary);
+            color: #ececec; padding: 16px; border-radius: 12px;
+            width: 240px; font-size: 12px; line-height: 1.5;
+            opacity: 0; pointer-events: none;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100; box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            text-align: center;
+        }
+        .leader-card:hover .leader-tooltip { opacity: 1; transform: translateX(-50%) translateY(-20px) scale(1); }
+        .leader-tooltip::after {
+            content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            border-left: 8px solid transparent; border-right: 8px solid transparent;
+            border-top: 8px solid var(--primary);
+        }
+        .tooltip-title { color: var(--primary); font-family: 'Kanit'; font-weight: 700; font-size: 13px; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 1px; }
+        .hist-controls-container {
+            position: absolute; right: 40px; bottom: 40px; 
+            display: flex; flex-direction: column; gap: 30px; align-items: center;
+            background: rgba(255,255,255,0.03); padding: 20px 10px; border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .hist-btn-group { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .hist-btn-label { font-size: 10px; color: #666; writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg); letter-spacing: 2px; }
+        .hist-nav-btn {
+            width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; justify-content: center; 
+            transition: 0.3s; color: #fff; font-size: 18px; background: rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+        .hist-nav-btn:hover { background: var(--primary); color: #000; border-color: var(--primary); transform: scale(1.1); box-shadow: 0 0 15px rgba(104, 167, 185, 0.3); }
+
+        /* Controles Mobile de História */
+        .mobile-hist-controls, .mobile-leader-controls {
+            display: none; /* Desktop default */
+            flex-direction: row;
+            gap: 15px;
+            margin-bottom: 5px;
+            justify-content: flex-start;
+        }
+        .mobile-control-btn {
+            width: 32px; height: 32px;
+            border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--primary);
+            background: rgba(0,0,0,0.4);
+        }
+
+        /* --- E-ACADEMY --- */
+        .academy-container {
+            max-width: 1600px; width: 95%; margin: 0 auto; padding: 40px; 
+            display: grid; grid-template-columns: 260px 1fr; gap: 40px;
+        }
+        .academy-sidebar { 
+            position: sticky; top: 120px; height: fit-content; 
+            background: transparent; 
+            border-right: 1px solid rgba(255,255,255,0.05);
+            padding-right: 20px;
+            z-index: 50;
+        }
+        .filter-title { 
+            font-family: 'Kanit'; font-size: 14px; margin-bottom: 20px; color: #666; 
+            text-transform: uppercase; letter-spacing: 1px; font-weight: 700;
+        }
+        .filter-opt {
+            padding: 12px 16px; margin-bottom: 5px; border-radius: 8px;
+            color: #888; font-size: 14px; font-weight: 500; 
+            display: flex; align-items: center; gap: 12px; transition: 0.3s var(--ease-out-expo);
+            border: 1px solid transparent;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .filter-opt::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 60%; height: 100%;
+            background: radial-gradient(circle at left, rgba(104,167,185,0.2), transparent 60%);
+            opacity: 0;
+            transition: 0.4s var(--ease-out-expo);
+        }
+        .filter-opt:hover::before {
+            left: 0;
+            opacity: 1;
+        }
+        .filter-opt:hover { background: rgba(255,255,255,0.03); color: #fff; }
+        .filter-opt.active { background: rgba(104, 167, 185, 0.08); color: var(--primary); border: 1px solid rgba(104, 167, 185, 0.4); box-shadow: 0 0 20px rgba(104,167,185,0.25); }
+        .filter-opt i { font-size: 18px; }
+        .academy-content { flex: 1; }
+        .section-header-academy { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .section-header-academy h2 { font-family: 'Kanit'; font-size: 32px; color: #fff; }
+        .section-header-academy p { font-size: 14px; color: #666; margin-top: 5px; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .course-card {
+            background: radial-gradient(circle at top left, rgba(104,167,185,0.06), transparent 60%), #111; 
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px; overflow: hidden; position: relative;
+            display: flex; flex-direction: column; 
+            transition: transform 0.35s var(--ease-out-expo), 
+                        box-shadow 0.35s var(--ease-out-expo),
+                        border-color 0.35s var(--ease-out-expo),
+                        background 0.35s var(--ease-out-expo),
+                        translate 0.35s var(--ease-out-expo);
+            height: 100%; cursor: pointer;
+        }
+        .course-card::after {
+            content:'';
+            position:absolute;
+            inset:0;
+            background: radial-gradient(circle at top right, rgba(255,255,255,0.06), transparent 55%);
+            opacity:0;
+            transition: opacity 0.35s var(--ease-out-expo);
+            pointer-events: none;
+        }
+        .course-card:hover { 
+            transform: translateY(-6px); 
+            border-color: rgba(104, 167, 185, 0.6);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.7), 0 0 25px rgba(104,167,185,0.25);
+        }
+        .course-card:hover::after {
+            opacity: 1;
+        }
+        .course-thumb {
+            height: 140px; background: #1a1a1a; position: relative;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        .course-thumb::before {
+            content: ''; position: absolute; inset: 0; 
+            background: radial-gradient(circle at center, rgba(104,167,185,0.15), transparent);
+        }
+        .course-icon { font-size: 40px; color: #fff; z-index: 2; opacity: 0.8; transition: 0.3s; }
+        .course-card:hover .course-icon { transform: scale(1.1); color: var(--primary); opacity: 1; }
+        .course-type {
+            position: absolute; top: 10px; left: 10px; z-index: 3;
+            font-size: 9px; font-weight: 700; color: #000; background: #fff;
+            padding: 3px 8px; border-radius: 4px; text-transform: uppercase;
+        }
+        .type-aula { background: #ffb703; }
+        .type-teste { background: #fff; }
+        .type-grad { background: #00b4d8; color: #fff; }
+        .type-cap { background: #fb8500; color: #000; }
+        .course-body { padding: 20px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .course-title { font-family: 'Kanit'; font-size: 18px; color: #fff; margin-bottom: 8px; line-height: 1.3; }
+        .course-meta { font-size: 12px; color: #666; margin-bottom: 15px; display: flex; gap: 10px; align-items: center; }
+        .course-meta i { color: var(--primary-dark); }
+        .card-action {
+            margin-top: 10px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--primary);
+            display: flex; justify-content: space-between; align-items: center; opacity: 0.7; transition: 0.3s;
+        }
+        .course-card:hover .card-action { opacity: 1; }
+        .locked-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.85);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s var(--ease-out-expo); backdrop-filter: blur(4px);
+            z-index: 10;
+            pointer-events: none;
+        }
+        .course-card.pin-active .locked-overlay { opacity: 1; pointer-events: auto; }
+        .course-card.disabled { filter: grayscale(1); opacity: 0.6; pointer-events: none; }
+        .course-card.disabled .card-action { display: none; }
+        
+        .pin-wrapper-modern {
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .pin-input-modern {
+            background: transparent; border: none; border-bottom: 2px solid var(--primary);
+            color: #fff; width: 80px; text-align: center; font-family: 'Space Grotesk'; font-size: 20px; letter-spacing: 5px;
+            padding: 5px;
+            transition: border-color 0.3s;
+        }
+        .pin-input-modern:focus { border-color: var(--primary-light); }
+        .pin-btn-modern {
+            background: var(--primary); color: #000; border: none; padding: 5px 15px; border-radius: 20px;
+            font-size: 10px; font-weight: 700; cursor: pointer; text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+        }
+        .pin-btn-modern:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        /* Mobile Dropdown Academy */
+        .mobile-academy-dropdown {
+            display: none; /* Desktop default hidden */
+            width: 100%;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 100;
+        }
+        .mobile-dropdown-btn {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Kanit';
+            text-align: left;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .mobile-dropdown-list {
+            display: none;
+            flex-direction: column;
+            background: #111;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            margin-top: 5px;
+            overflow: hidden;
+            position: absolute;
+            width: 100%;
+            z-index: 101;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+        }
+        .mobile-dropdown-list.active { display: flex; }
+        .mobile-dropdown-item {
+            padding: 15px;
+            color: #aaa;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: 0.2s;
+        }
+        .mobile-dropdown-item.active { background: rgba(104,167,185,0.1); color: var(--primary); }
+
+        /* --- SLIDE READER --- */
+        .slide-viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,5,0.98); z-index: 5000; display: flex; align-items: center; justify-content: center; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.77, 0, 0.175, 1); backdrop-filter: blur(10px); }
+        .slide-viewer.active { transform: translateY(0); }
+        .slide-container-reader { width: 95%; max-width: 1600px; height: 90vh; background: #0f0f0f; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); position: relative; }
+        .reader-header { height: 70px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; padding: 0 40px; background: #141414; }
+        .reader-course-info { display: flex; flex-direction: column; }
+        .reader-subtitle { color: #666; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+        .reader-title { color: #fff; font-family: 'Kanit'; font-size: 18px; }
+        .reader-close { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; transition: 0.3s; }
+        .reader-close:hover { background: #fff; color: #000; transform: rotate(90deg); }
+        .reader-body { flex: 1; display: flex; overflow: hidden; }
+        .reader-text-side { flex: 1; padding: 60px; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-start; border-right: 1px solid rgba(255,255,255,0.05); }
+        .slide-content-title { font-family: 'Kanit'; font-size: 42px; margin-bottom: 30px; color: #fff; line-height: 1.1; }
+        .slide-content-text { font-size: 18px; color: #ccc; line-height: 1.8; text-align: justify; font-family: 'Inter', sans-serif; font-weight: 300; }
+        .reader-media-side { flex: 1; background: #0a0a0a; display: flex; align-items: center; justify-content: center; padding: 40px; position: relative; overflow: hidden; }
+        .reader-media-side::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 30px 30px; opacity: 0.5; }
+        .slide-img-wrapper { max-width: 100%; max-height: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); z-index: 2; border: 1px solid rgba(255,255,255,0.1); }
+        .slide-img-wrapper img { max-width: 100%; max-height: 60vh; display: block; object-fit: contain; }
+        .reader-footer { height: 80px; border-top: 1px solid rgba(255,255,255,0.05); background: #141414; display: flex; align-items: center; justify-content: center; padding: 0 40px; position: relative; }
+        .reader-controls { display: flex; align-items: center; gap: 20px; width: 100%; max-width: 600px; }
+        .reader-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; transition: 0.3s; flex-shrink: 0; }
+        .reader-btn:hover { background: var(--primary); color: #000; border-color: var(--primary); transform: translateY(-1px); box-shadow: 0 10px 25px rgba(0,0,0,0.6); }
+        .reader-progress-container { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .reader-progress-bar { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+        .reader-progress-fill { height: 100%; background: var(--primary); width: 0%; transition: 0.3s var(--ease-out-expo); box-shadow: 0 0 10px var(--primary); }
+        .reader-progress-text { font-size: 10px; color: #666; text-align: center; font-family: 'Space Grotesk'; letter-spacing: 1px; text-transform: uppercase; }
+
+        /* --- OCEANTIMES --- */
+        #revista { padding: 120px 40px 40px; }
+        .news-portal-container { max-width: 1400px; margin: 0 auto; }
+        .news-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 40px; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 20px; 
+        }
+        .ocean-times-logo {
+            font-family: 'Merriweather', serif;
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            background: linear-gradient(180deg, #fff 20%, #999 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex; flex-direction: column;
+        }
+        .ocean-times-logo span {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            color: var(--primary);
+            -webkit-text-fill-color: var(--primary);
+            margin-top: 5px;
+            text-transform: uppercase;
+            background-clip: text; 
+            -webkit-background-clip: text; 
+        }
+        .search-box-enhanced {
+            display: flex; align-items: center; 
+            background: #0a0a0a; 
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 20px; 
+            border-radius: 50px; 
+            gap: 12px; 
+            width: 300px;
+            transition: all 0.3s var(--ease-out-expo);
+        }
+        .search-box-enhanced:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(104, 167, 185, 0.2);
+            background: #111;
+            transform: translateY(-1px);
+        }
+        .search-box-enhanced i { color: #666; font-size: 18px; transition: 0.3s; }
+        .search-box-enhanced:focus-within i { color: var(--primary); }
+        .search-box-enhanced input { 
+            background: transparent; border: none; 
+            color: #fff; font-size: 14px; width: 100%; 
+            font-family: 'Inter'; outline: none;
+        }
+        .search-box-enhanced input::placeholder { color: #444; }
+        .news-nav-controls { display: flex; gap: 10px; }
+        .news-nav-btn {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.3s var(--ease-out-expo);
+        }
+        .news-nav-btn:hover {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+            transform: scale(1.1) translateY(-1px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+        }
+        .news-layout-wrapper { display: grid; grid-template-columns: 2fr 1fr; gap: 40px; transition: opacity 0.25s ease, transform 0.25s ease; }
+        .news-layout-wrapper.news-changing { opacity: 0; transform: translateX(-15px); }
+        .news-featured-main {
+            height: 500px; position: relative; border-radius: 16px; overflow: hidden; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+            transform-origin: center;
+            transition: transform 0.35s var(--ease-out-expo), box-shadow 0.35s var(--ease-out-expo), border-color 0.35s var(--ease-out-expo);
+        }
+        .news-featured-main img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+        .news-featured-main:hover img { transform: scale(1.03); }
+        .news-featured-main:hover {
+            transform: translateY(-6px);
+            border-color: rgba(104,167,185,0.6);
+            box-shadow: 0 24px 45px rgba(0,0,0,0.75);
+        }
+        .news-featured-content { position: absolute; bottom: 0; left: 0; width: 100%; padding: 40px; background: linear-gradient(to top, #000, transparent); }
+        .news-cat-badge { background: var(--primary); color: #000; padding: 4px 10px; font-size: 10px; font-weight: 700; border-radius: 4px; display: inline-block; margin-bottom: 15px; text-transform: uppercase; }
+        .news-featured-title { font-family: 'Kanit'; font-size: 42px; color: #fff; line-height: 1.1; margin-bottom: 15px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .news-meta { display: flex; gap: 15px; color: #ccc; font-size: 12px; font-weight: 500; align-items: center; }
+        .news-meta i { color: var(--primary); }
+        .news-sidebar-list { display: flex; flex-direction: column; gap: 20px; }
+        .news-side-card { display: flex; gap: 15px; background: #111; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.3s var(--ease-out-expo); }
+        .news-side-card:hover { border-color: rgba(104, 167, 185, 0.5); transform: translateX(8px); box-shadow: 0 12px 30px rgba(0,0,0,0.7); }
+        .news-side-img { width: 100px; height: 80px; object-fit: cover; border-radius: 8px; }
+        .news-side-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .news-side-tag { color: var(--primary); font-size: 9px; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; letter-spacing: .5px; }
+        .news-side-title { font-family: 'Kanit'; font-size: 14px; color: #fff; line-height: 1.3; margin-bottom: 5px; }
+        .news-side-date { font-size: 10px; color: #666; }
+        .news-empty {
+            font-size: 14px; color: #777; margin-top: 10px;
+        }
+
+        /* --- NEWS READER SIDEBAR --- */
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(7px);
+            -webkit-backdrop-filter: blur(7px);
+            z-index: 6000;
+            display: flex;
+            align-items: stretch;
+            justify-content: flex-end;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-news-content {
+            background: #050505;
+            border-left: 1px solid rgba(255,255,255,0.08);
+            width: 520px; 
+            max-width: 90%;
+            height: 100%;
+            border-radius: 0; 
+            overflow-y: auto;
+            box-shadow: -10px 0 40px rgba(0,0,0,0.7);
+            transform: translateX(100%);
+            transition: transform 0.35s var(--ease-out-expo);
+            position: relative;
+        }
+        .modal-backdrop.active .modal-news-content {
+            transform: translateX(0);
+        }
+        .modal-close-fixed {
+            position: fixed;
+            top: 20px; 
+            right: 24px;
+            width: 40px; height: 40px; 
+            background: rgba(0,0,0,0.9);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            color: #fff; font-size: 20px;
+            cursor: pointer; 
+            z-index: 7001;
+            transition: 0.3s var(--ease-out-expo);
+        }
+        .modal-backdrop:not(.active) .modal-close-fixed { pointer-events: none; opacity: 0; }
+        .modal-backdrop.active .modal-close-fixed { opacity: 1; }
+        .modal-close-fixed:hover { background: #fff; color: #000; transform: rotate(90deg); }
+        .news-article-header-img { width: 100%; height: 190px; object-fit: cover; mask-image: linear-gradient(to bottom, black 70%, transparent 100%); }
+        .news-article-body { padding: 0 24px 40px; position: relative; margin-top: -40px; }
+        .news-article-tag { background: var(--primary); color: #000; padding: 6px 14px; font-weight: 700; font-size: 11px; border-radius: 4px; display: inline-block; margin-bottom: 20px; }
+        .news-article-title { font-family: 'Kanit'; font-size: 28px; color: #fff; line-height: 1.1; margin-bottom: 20px; text-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+        .news-article-meta { display: flex; align-items: center; gap: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 25px; }
+        .news-author-lg { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #fff; font-weight: 600; }
+        .news-author-lg img { width: 36px; height: 36px; border-radius: 50%; background: #222; border: 1px solid #333; }
+        .news-date-lg { color: #666; font-size: 13px; }
+        .news-text-content { font-family: 'Merriweather', serif; font-size: 16px; line-height: 1.9; color: #d1d5db; }
+        .news-text-content p { margin-bottom: 18px; }
+
+        /* --- MURAL --- */
+        #mural { 
+            padding-top: 140px; 
+            align-items: center; 
+            text-align: center;
+        }
+        
+        .mural-title-styled {
+            text-align: center;
+            margin-bottom: 60px;
+            font-family: 'Kanit', sans-serif;
+            font-size: clamp(32px, 5vw, 60px);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: #fff;
+            position: relative;
+            display: inline-block;
+            background: linear-gradient(135deg, #ffffff 0%, #a4dbe9 50%, #68A7B9 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 10px 30px rgba(104,167,185,0.3);
+            background-size: 200% auto;
+            width: 100%;
+            max-width: 1000px;
+        }
+        
+        .mural-title-styled::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--primary);
+            border-radius: 2px;
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        /* CORREÇÃO DO LAYOUT DO MURAL */
+        .wall-container { 
+            width: 90%; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            display: grid;
+            /* Inicia com 3 colunas para desktop */
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            gap: 20px; 
+            margin-top: 30px; 
+            align-items: start;
+        }
+        
+        .wall-note {
+            background: rgba(20, 23, 26, 0.6); 
+            backdrop-filter: blur(10px);
+            border-radius: 18px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            height: 80px; 
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: transform 0.3s, background 0.3s, border-color 0.3s;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            overflow: visible !important;
+        }
+
+        .wall-note:hover {
+            transform: translateY(-5px);
+            z-index: 100;
+            background: rgba(30, 35, 40, 0.85);
+            border-color: var(--primary);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5), 0 0 15px rgba(104, 167, 185, 0.15);
+        }
+
+        /* Avatar Container (Left Side) */
+        .wall-avatar-container {
+            width: 110px; 
+            height: 100%;
+            position: relative;
+            margin-left: 0;
+            display: flex;
+            align-items: flex-end; 
+            justify-content: center;
+            overflow: visible !important; 
+            z-index: 2;
+            flex-shrink: 0;
+        }
+
+        .wall-avatar {
+            width: 5em;
+            height: auto;
+            max-height: none !important; 
+            position: absolute;
+            bottom: 1px;
+            left: 9%;
+            transform-origin: bottom center;
+            image-rendering: pixelated;
+            filter: drop-shadow(0 5px 8px rgba(0,0,0,0.4));
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            object-fit: none;
+            object-position: center 25%;
+        }
+        
+        .wall-note img {
+            max-width: none !important; 
+        }
+
+        /* Inativo: Preto e Branco */
+        .wall-note.inactive .wall-avatar {
+            filter: grayscale(100%) drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+            opacity: 0.7;
+        }
+
+        /* Text Content (Right Side) */
+        .wall-content {
+            flex: 1;
+            padding: 15px 70px 15px 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            min-width: 0;
+        }
+
+        .wall-user {
+            font-family: 'Kanit', sans-serif;
+            font-size: 16px;
+            color: #fff;
+            font-weight: 700;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            line-height: 1.1;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wall-role {
+            font-family: 'Kanit', sans-serif;
+            font-size: 10px;
+            color: var(--primary);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+        }
+
+        /* Status Pill (Bottom Right) */
+        .wall-status {
+            position: absolute;
+            bottom: 12px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 50%;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.3s;
+            z-index: 3;
+        }
+        
+        /* Status Dot API Controlled */
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #95a5a6; 
+            border-radius: 50%;
+            box-shadow: none;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        
+        /* Remove old pseudo-elements */
+        .wall-note::after, .wall-note::before { display: none; }
+        .wall-msg-preview { display: none; } 
+        .wall-header { display: none; } 
+
+        .add-note-btn { 
+            position: fixed; bottom: 40px; right: 40px; width: 60px; height: 60px; background: var(--primary); border-radius: 50%; color: #000; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(104, 167, 185, 0.4); cursor: pointer; transition: 0.3s var(--ease-out-expo); 
+            z-index: 9500; 
+        }
+        .add-note-btn:hover { transform: scale(1.1) rotate(90deg); background: #fff; }
+
+        /* --- LETTER MODAL FIX --- */
+        .letter-paper {
+            background-color: #f4f1ea;
+            /* Efeito de linhas de caderno */
+            background-image: linear-gradient(transparent 29px, rgba(0,0,0,0.1) 30px);
+            background-size: 100% 30px;
+            color: #333;
+            width: 600px;
+            max-width: 90%;
+            
+            /* FIX: SCROLL E TAMANHO */
+            max-height: 100vh;
+            overflow-y: auto; 
+            overflow-x: hidden;
+            
+            padding: 60px 60px 40px; 
+            border-radius: 2px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            font-family: 'Merriweather', serif;
+            display: block; 
+            transform: translateY(50px); opacity: 0;
+            transition: all 0.5s var(--ease-out-expo);
+        }
+        
+        /* Estilização da Scrollbar da Carta */
+        .letter-paper::-webkit-scrollbar { width: 8px; }
+        .letter-paper::-webkit-scrollbar-track { background: #e0ddd5; }
+        .letter-paper::-webkit-scrollbar-thumb { background: #b0aba0; border-radius: 4px; }
+        
+        .modal-backdrop.active .letter-paper { transform: translateY(0); opacity: 1; }
+        .letter-close { position: absolute; top: 20px; right: 20px; cursor: pointer; color: #555; font-size: 24px; transition: 0.3s; z-index: 10; }
+        .letter-close:hover { color: #000; transform: rotate(90deg); }
+        .letter-header { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; border-bottom: 1px solid #dcd9d2; padding-bottom: 20px; }
+        .letter-avatar { 
+            width: 15%; height: auto; border: none; border-radius: 0; 
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2));
+            margin-right: 20px;
+        }
+        .letter-meta h3 { font-size: 20px; margin: 0; font-family: 'Kanit'; color: #000; }
+        .letter-meta span { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #777; font-weight: 600; }
+        
+        .letter-body { 
+            font-size: 16px; 
+            line-height: 30px;
+            margin-bottom: 40px; 
+            
+            /* FIX: QUEBRA DE TEXTO */
+            white-space: pre-wrap; /* Mantém quebras de linha manuais */
+            word-wrap: break-word; /* Quebra palavras longas */
+            overflow-wrap: break-word; /* Padrão moderno */
+            word-break: break-word; /* Garante quebra em links longos */
+            text-align: left; /* Garante alinhamento à esquerda padrão */
+        }
+        .letter-footer { margin-top: auto; font-size: 14px; color: #555; }
+        .signature-font { font-family: 'Pinyon Script', cursive; font-size: 36px; color: #000; margin-top: 10px; display: block; }
+
+        /* --- DEV --- */
+        #dev { 
+            justify-content: center; 
+            align-items: center; 
+            background: transparent; 
+            padding-top: 140px;
+        }
+        
+        /* FIX DEV CARDS*/
+        .dev-container { 
+            display: flex; 
+            gap: 30px; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .dev-card { 
+            text-align: left; /* Alinha o conteúdo interno (nome/cargo) à esquerda */
+            width: 100%; 
+            max-width: 380px; /* Aumenta a largura para caber o layout lateral */
+            padding: 15px 30px; /* Ajusta o padding para um visual mais horizontal */
+            background: rgba(20, 23, 26, 0.6); 
+            backdrop-filter: blur(10px);
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s var(--ease-out-expo);
+            cursor: default;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            height: 100px; /* Altura fixa para condensar */
+            overflow: hidden;
+            position: relative; /* Para hover effects */
+        }
+        
+        .dev-card:hover {
+            transform: translateY(-5px) scale(1.02); /* Escala menor para cards horizontais */
+            border-color: var(--primary);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5), 0 0 15px rgba(104, 167, 185, 0.3);
+        }
+
+        .dev-info-text {
+            flex-grow: 1;
+            /* Garante que o texto não vaze se o nick for longo */
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .dev-avatar { 
+            /* Remove estilos de círculo e centralização */
+            width: 100px; 
+            height: 150px; 
+            transition: transform 0.3s var(--ease-out-expo);
+            overflow: hidden;
+            flex-shrink: 0;
+            object-fit: none;
+            object-position: center 25%;
+        }
+        
+        .dev-avatar img { 
+            width: auto; /* Permite que o Habbo Image ajuste sua largura */
+            height: auto; 
+            border-radius: 0; 
+            object-fit: cover; 
+            /* Deslocamento da imagem para simular o "head-only" do wall-note */
+            object-position: 50% 20%; 
+            z-index: 2;
+        }
+
+        .dev-card:hover .dev-avatar {
+            transform: none; /* Sem animação de escala no avatar */
+            box-shadow: none;
+        }
+        
+        /* Ajuste do Texto dentro do Card */
+        .dev-card h2 { 
+            font-size: 18px; 
+            margin: 0 0 2px 0 !important; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .dev-card p {
+            font-size: 10px;
+            margin-top: 0 !important; 
+        }
+        
+        /* FIX TEXTO GRANDE EM CARDS */
+        .code-block { 
+            /* Removido do dev-card para mantê-lo simples e horizontal */
+            display: none; 
+        }
+        
+        /* Scroll bonito para o code block */
+        .code-block::-webkit-scrollbar { width: 4px; }
+        .code-block::-webkit-scrollbar-track { background: #222; }
+        .code-block::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 2px; }
+
+        /* --- TOGGLE PERFORMANCE (DESKTOP ONLY) --- */
+        #perf-toggle {
+            position: fixed; bottom: 20px; right: 20px;
+            width: 40px; height: 40px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; cursor: pointer;
+            /* Z-INDEX BEM ALTO PARA FICAR CLICÁVEL */
+            z-index: 10001;
+            transition: 0.3s;
+        }
+        #perf-toggle:hover { background: rgba(255,255,255,0.1); }
+        .perf-tooltip {
+            position: absolute; right: 50px; top: 50%; transform: translateY(-50%);
+            background: #111; padding: 5px 10px; border-radius: 4px;
+            font-size: 10px; white-space: nowrap; font-weight: 600; text-transform: uppercase;
+            border: 1px solid #333; opacity: 0; pointer-events: none;
+            transition: 0.3s;
+        }
+        #perf-toggle:hover .perf-tooltip { opacity: 1; right: 45px; }
+
+        /* --- FORM MODAL --- */
+        .form-modal-content {
+            background: #111;
+            width: 500px;
+            max-width: 90%;
+            padding: 30px;
+            border-radius: 18px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            position: relative;
+            display: flex; flex-direction: column; gap: 15px;
+            transform: scale(0.9); opacity: 0;
+            transition: all 0.3s var(--ease-out-expo);
+        }
+        .modal-backdrop.active .form-modal-content { transform: scale(1); opacity: 1; }
+        .form-header { margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+        .form-title { font-family: 'Kanit'; font-size: 20px; color: #fff; }
+        .form-subtitle { font-size: 12px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-label { font-size: 12px; color: #aaa; font-weight: 600; }
+        .form-input { 
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
+            padding: 10px; border-radius: 8px; color: #fff; font-family: 'Inter'; font-size: 14px;
+            -webkit-appearance: none; /* Remove default style for cross-browser select/input */
+            -moz-appearance: none;
+            appearance: none;
+        }
+        .form-input:focus { border-color: var(--primary); outline: none; }
+        select.form-input {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%2368A7B9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px; /* Espaço para o ícone */
+            cursor: pointer;
+        }
+        select.form-input option {
+            background: #111;
+            color: #fff;
+        }
+        .form-textarea { 
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
+            padding: 10px; border-radius: 8px; color: #fff; font-family: 'Inter'; font-size: 14px;
+            resize: vertical; min-height: 80px;
+        }
+        .form-btn-submit {
+            background: var(--primary); color: #000; padding: 12px; border-radius: 8px; border: none;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+            margin-top: 10px; transition: 0.3s;
+        }
+        .form-btn-submit:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+        /* --- PERFORMANCE MODE OVERRIDES --- */
+        .performance-mode * {
+            box-shadow: none !important;
+            text-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            transition: none !important; /* Otimização Agressiva: Remove transições */
+            animation: none !important; /* Otimização Agressiva: Remove animações CSS */
+        }
+        
+        /* Remover apenas backgrounds que são EFEITOS pesados*/
+        .performance-mode .hero-title { background: none; -webkit-text-fill-color: var(--primary); color: var(--primary); }
+        .performance-mode #bg-canvas { display: none !important; }
+        .performance-mode .custom-cursor { display: none !important; }
+        
+        /* LOGO FIX */
+        .performance-mode .nav-logo img {
+            filter: none !important;
+        }
+
+        /* SIDEBAR FIX */
+        .performance-mode .filter-opt::before {
+            display: none !important;
+        }
+
+        /* NAVBAR FIX*/
+        .performance-mode .navbar { 
+            background: #0a0a0a; 
+            border-color: #333; 
+            gap: 5px; 
+            transform: translateX(-50%) !important; /* Trava posição */
+            top: 20px !important;
+        }
+        .performance-mode .navbar:hover {
+            transform: translateX(-50%) !important; /* Impede subida */
+        }
+
+        .performance-mode .nav-sep { display: none; } /* Ocultar separadores */
+        
+        .performance-mode .nav-item.active { background: #00303b; border-color: var(--primary); }
+        .performance-mode .btn-primary:hover { transform: none; filter: brightness(1.1); }
+        .performance-mode .btn-secondary:hover { transform: none; background: #222; }
+        .performance-mode .hero-img-character { filter: none !important; transform: rotate(0) scale(-1, 1) !important; animation: none !important; }
+        
+        /* Loading Otimizado - Modo Performance */
+        .performance-mode .loader-logo-wrapper { display: none; }
+        .performance-mode .loader-text-container { margin-bottom: 20px; }
+        .performance-mode .loader-status { font-size: 24px; letter-spacing: 2px; }
+        .performance-mode .loader-subtext { display: none; }
+        .performance-mode .loader-progress-track { background: #333; width: 300px; }
+        .performance-mode .loader-progress-fill { background: var(--primary); box-shadow: none; animation: loadProgress 2s linear forwards !important; }
+        
+        /* Ajustes História - Modo Performance */
+        .performance-mode .year-display { 
+            color: var(--primary); 
+            -webkit-text-stroke: 0; 
+            font-size: 60px; 
+            opacity: 1 !important;
+            animation: none !important;
+        }
+        .performance-mode .year-display::after { display: none; } /* Remove o efeito de clip-path animado */
+        .performance-mode .hist-left { 
+            /* Gradiente escuro sobreposto para contraste */
+            background-image: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('https://i.imgur.com/p7Oi5yy.png') !important; 
+            background-size: cover !important;
+            background-blend-mode: normal !important;
+        }
+        
+        /* Home Elements - Sem animação de entrada */
+        .performance-mode .animate-enter {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+        }
+
+        /* Simplificação de Cards e Elementos */
+        .performance-mode .course-card, 
+        .performance-mode .squad-card, 
+        .performance-mode .news-side-card { 
+            background-color: #111 !important; 
+            border: 1px solid #222 !important;
+            border-radius: 12px !important; /* Arredondado mantido */
+        }
+        /* Wall note overrides for performance mode */
+        .performance-mode .wall-note {
+            box-shadow: none !important;
+            border: 1px solid #666 !important;
+            transform: none !important; /* Sem rotação */
+            background: #000 !important; /* Manter preto */
+        }
+        
+        .performance-mode .course-card:hover,
+        .performance-mode .squad-card:hover, 
+        .performance-mode .wall-note:hover,
+        .performance-mode .news-featured-main:hover,
+        .performance-mode .news-side-card:hover,
+        .performance-mode .leader-card:hover .leader-card-inner {
+            transform: none !important; 
+            border-color: var(--primary) !important;
+        }
+        
+        .performance-mode .course-thumb::before { background: none; }
+        .performance-mode .leader-info { background: rgba(0,0,0,0.9); transform: translateY(0); }
+        .performance-mode .modal-backdrop { background: rgba(0,0,0,0.9); }
+        .performance-mode .slide-viewer { background: #000; }
+        .performance-mode .hero-title { animation: none; }
+        .performance-mode .badge { background: #111; border-color: var(--primary-dark); }
+        
+        /* MURAL LETTER FIX: RESTAURAR O VISUAL DE PAPEL */
+        .performance-mode .letter-paper { 
+            animation: none !important; 
+            transition: none !important; 
+            transform: none !important; 
+            /* Restaurar fundo de papel e linhas */
+            background-color: #f4f1ea !important;
+            background-image: linear-gradient(transparent 29px, rgba(0,0,0,0.1) 30px) !important;
+            /* Sombra simples para destaque */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
+            border: 1px solid #dcd9d2 !important;
+        }
+
+        .performance-mode .mural-title-styled {
+            background: none !important;
+            -webkit-text-fill-color: #fff !important; /* Branco simples */
+            text-shadow: none !important;
+            animation: none !important;
+        }
+
+        .performance-mode select.form-input {
+            background-image: none !important;
+            padding-right: 10px !important;
+            background: #222 !important; /* Fundo mais escuro */
+            color: #ccc !important;
+            border-color: #333 !important;
+        }
+        
+        /* Tablet e Desktop Pequeno */
+        @media (max-width: 1200px) {
+            #historia { flex-direction: column; }
+            .hist-left { width: 100%; height: 300px; padding: 40px; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
+            .hist-right { width: 100%; height: auto; padding: 60px 40px; }
+            .hist-controls-container { top: 20px; right: 20px; bottom: auto; flex-direction: row; }
+            .hist-btn-label { display: none; }
+        }
+
+        /* Mobile Landscape Specific */
+        @media (max-width: 900px) and (orientation: landscape) {
+            .mobile-menu-drawer {
+                padding-top: 10px;
+                /* Garante scroll se o menu for maior que a tela horizontal */
+                overflow-y: auto; 
+            }
+            .mobile-logo { margin-bottom: 20px; }
+            .mobile-nav-item { padding: 8px 15px; }
+            #home { padding-top: 60px; }
+        }
+
+        /* Mobile e Tablets Menores */
+        @media (max-width: 980px) {
+            /* 1. Spacing Reduction */
+            .page { padding-top: 80px; }
+            .app-container { height: 100%; overflow: hidden; }
+
+            /* Mobile Menu System */
+            .navbar { display: none; }
+            
+            #perf-toggle { display: none !important; }
+
+            .mobile-menu-toggle { display: flex; }
+
+            /* Home */
+            #home { flex-direction: column; padding: 80px 20px 20px; text-align: center; justify-content: flex-start; gap: 20px; }
+            .hero-content { text-align: center; align-items: center; max-width: 100%; margin-top: 10px; order: 2; }
+            .hero-desc { margin-left: auto; margin-right: auto; font-size: 14px; margin-bottom: 25px; }
+            .hero-image-container { justify-content: center; height: 35vh; min-height: 250px; width: 100%; order: 1; margin-bottom: 10px; }
+            .hero-img-character { max-height: 100%; transform: scale(-1, 1); }
+            .home-btn-group { justify-content: center; width: 100%; }
+            .hero-title { font-size: 38px; margin-bottom: 10px; }
+            .badge { margin-bottom: 10px; font-size: 10px; }
+
+            /* Academy Layout */
+            .academy-container { grid-template-columns: 1fr; padding: 60px 20px 20px; gap: 20px; }
+            .academy-sidebar { 
+                position: relative; top: 0; 
+                border-right: none; border-bottom: none; 
+                padding-right: 0; padding-bottom: 0; margin-bottom: 10px;
+                width: 100%; overflow: visible;
+            }
+            .sidebar-menu { display: none; } /* Hide standard menu on mobile */
+            .mobile-academy-dropdown { display: block; } /* Show custom dropdown */
+            .cards-grid { grid-template-columns: 1fr; gap: 15px; } 
+
+            /* News (Mobile Specific - Improved Design) */
+            .news-header { flex-direction: column; align-items: flex-start; gap: 15px; border-bottom: none; margin-bottom: 20px; }
+            .search-box-enhanced { width: 100%; padding: 8px 15px; }
+            .news-layout-wrapper { grid-template-columns: 1fr; gap: 20px; }
+            .news-sidebar-list { display: flex; flex-direction: column; gap: 10px; }
+            .news-side-card { width: 100%; padding: 10px; gap: 10px; }
+            .news-side-img { width: 80px; height: 60px; }
+            .news-featured-main { height: 260px; border-radius: 12px; }
+            .news-featured-content { padding: 20px; }
+            .news-featured-title { font-size: 20px; margin-bottom: 10px; }
+            .news-cat-badge { margin-bottom: 8px; font-size: 9px; }
+            
+            /* News Modal - Dynamic Compact */
+            .modal-news-content { 
+                width: 90% !important; 
+                height: auto !important;
+                max-height: 85vh; 
+                top: 50%; left: 50%;
+                transform: translate(-50%, -50%) !important; 
+                border-radius: 16px !important; 
+                max-width: 90% !important;
+                border: 1px solid rgba(255,255,255,0.1) !important;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+                display: flex; flex-direction: column;
+            }
+            .modal-backdrop.active .modal-news-content { transform: translate(-50%, -50%) !important; }
+            .modal-close-fixed { top: 15px; right: 15px; z-index: 7002; width: 32px; height: 32px; font-size: 16px; background: rgba(0,0,0,0.5); }
+            .news-article-header-img { height: 140px; }
+            .news-article-body { padding: 0 20px 30px; margin-top: -30px; }
+            .news-article-title { font-size: 20px; margin-bottom: 10px; }
+            .news-text-content { font-size: 14px; line-height: 1.6; color: #ccc; }
+
+            /* Slide Reader Mobile (More Dynamic/Compact) */
+            .slide-viewer { padding: 20px; align-items: center; }
+            .slide-container-reader {
+                width: 100% !important;
+                height: auto !important;
+                max-height: 85vh;
+                max-width: 100% !important;
+                border-radius: 16px !important;
+                border: 1px solid rgba(255,255,255,0.1);
+                display: flex; flex-direction: column;
+            }
+            .reader-header { height: 50px; padding: 0 15px; }
+            .reader-title { font-size: 14px; }
+            .reader-body {
+                flex-direction: column; 
+                height: auto; 
+                flex: 1; 
+                overflow: hidden;
+            }
+            .reader-media-side {
+                flex: none;
+                height: 180px; 
+                padding: 0;
+                background: #050505;
+            }
+            .slide-img-wrapper { border: none; width: 100%; height: 100%; box-shadow: none; border-radius: 0; }
+            .reader-text-side {
+                flex: 1;
+                padding: 15px;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .slide-content-title { font-size: 22px; margin-bottom: 10px; }
+            .slide-content-text { font-size: 14px; line-height: 1.5; }
+            .reader-footer { height: 60px; padding: 0 15px; }
+            .reader-btn { width: 36px; height: 36px; font-size: 18px; }
+
+            /* Letter Modal Mobile (Compact) */
+            .letter-paper {
+                width: 90% !important;
+                max-height: 80vh;
+                overflow-y: auto;
+                padding: 30px 20px;
+                -webkit-overflow-scrolling: touch;
+                margin-top: 20px;
+            }
+            .letter-header { padding-bottom: 15px; margin-bottom: 20px; }
+            .letter-meta h3 { font-size: 16px; }
+            .letter-body { font-size: 14px; line-height: 24px; background-size: 100% 24px; background-image: linear-gradient(transparent 23px, rgba(0,0,0,0.1) 24px); }
+            
+            .wall-container { 
+                /* Força uma única coluna para garantir o comportamento, pois o minmax(280px, 1fr) 
+                   pode falhar em alguns viewports estreitos, ou apenas quebrar em 1 coluna se a tela for < 280px */
+                grid-template-columns: 1fr; 
+                width: 100%; 
+                padding: 0 20px; 
+            }
+            
+            /* Dev Fix for Mobile */
+            .dev-container { 
+                gap: 20px; 
+                padding: 0 20px;
+            }
+            
+            /* Form Modals */
+            .form-modal-content { width: 95%; max-width: 95%; padding: 20px; }
+            
+            /* Hist Mobile Tweaks */
+            .hist-left { padding: 30px 20px; height: auto; min-height: 200px; }
+            .hist-right { padding: 30px 20px 80px; } /* Bottom padding for layout */
+            .hist-title h2 { font-size: 32px; }
+            .hist-title span { font-size: 16px; }
+            .year-display { font-size: 60px; margin-bottom: 0; margin-top: 10px; }
+            
+            /* Hide Desktop Controls */
+            .hist-controls-container { display: none; }
+            
+            /* Show Mobile Controls */
+            .mobile-hist-controls { display: flex; align-items: center; margin-bottom: 0; }
+            .mobile-leader-controls { display: flex; align-items: center; margin-bottom: 10px; margin-top: 20px; }
+            
+            .leaders-grid { justify-content: center; }
+            .leader-card { width: 140px; height: 200px; }
+        }
+
+        /* Mobile Landscape Fix for Slide Reader */
+        @media (max-width: 900px) and (orientation: landscape) {
+            .reader-body { flex-direction: row; }
+            .reader-media-side { height: 100%; width: 40%; }
+            .reader-text-side { height: 100%; width: 60%; }
+            .slide-img-wrapper img { object-fit: contain; }
+        }
+
+        /* Mobile Pequeno (iPhone SE, etc) */
+        @media (max-width: 400px) {
+            .hero-title { font-size: 32px; }
+            .btn-primary, .btn-secondary { padding: 10px 18px; font-size: 12px; width: 100%; justify-content: center; }
+            .card-action { font-size: 10px; }
+        }
+    </style>
+</head>
+<body class="performance-mode"> <!-- Padrão inicial: Performance -->
+
+    <!-- LOADING SCREEN -->
+    <div id="site-loader">
+        <div class="loader-content">
+            <div class="loader-logo-wrapper">
+                <div class="loader-scan-line"></div>
+                <img src="https://i.imgur.com/dYDYcjX.png" alt="Carregando..." class="loader-logo">
+            </div>
+            <div class="loader-text-container">
+                <span class="loader-status">WAVEX BOOT</span>
+                <span class="loader-subtext">CARREGANDO TODOS MÓDULOS...</span>
+            </div>
+            <div class="loader-progress-track">
+                <div class="loader-progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOBILE MENU TOGGLE -->
+    <div class="mobile-menu-toggle" id="mobile-menu-btn">
+        <i class="ph-bold ph-list"></i>
+    </div>
+
+    <!-- MOBILE SIDEBAR DRAWER -->
+    <div class="mobile-menu-backdrop" id="mobile-menu-backdrop"></div>
+    <div class="mobile-menu-drawer" id="mobile-menu-drawer">
+        <div class="mobile-logo">
+            <img src="https://i.imgur.com/dYDYcjX.png" alt="Logo">
+            <span>WaveX</span>
+        </div>
+        <div class="mobile-nav-list">
+            <div class="mobile-nav-item active" data-target="home">
+                <i class="ph ph-house"></i> Início
+            </div>
+            <div class="mobile-nav-item" data-target="historia">
+                <i class="ph ph-hourglass-medium"></i> Histórico
+            </div>
+            <div class="mobile-nav-item" data-target="efeacademy">
+                <i class="ph ph-graduation-cap"></i> E-Academy
+            </div>
+            <div class="mobile-nav-item" data-target="revista">
+                <i class="ph ph-newspaper"></i> OceanTimes
+            </div>
+            <div class="mobile-nav-item" data-target="oceandata_mobile">
+                <i class="ph ph-chart-polar"></i> OceanData (Em Breve)
+            </div>
+            <div class="mobile-nav-item" data-target="mural">
+                <i class="ph ph-push-pin"></i> Mural
+            </div>
+            <div class="mobile-nav-item" data-target="dev">
+                <i class="ph ph-code"></i> Dev
+            </div>
+        </div>
+        <!-- O BOTÃO DE MODO ESTÁ AQUI, FUNCIONA APENAS NO MOBILE, O CSS ACIMA ESCONDE O BOTÃO FLUTUANTE DE DESKTOP -->
+        <div class="mobile-footer-controls">
+            <div class="mobile-perf-btn" id="mobile-perf-toggle">
+                <i class="ph-bold ph-battery-low" id="mobile-perf-icon"></i>
+                <div>
+                    <div class="mobile-perf-status">Modo</div>
+                    <div class="mobile-perf-val" id="mobile-perf-text">Performance</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PERFORMANCE TOGGLE (DESKTOP ONLY - Hidden on Mobile via CSS) -->
+    <div id="perf-toggle">
+        <i class="ph-bold ph-battery-low"></i>
+        <span class="perf-tooltip">Modo: Performance</span>
+    </div>
+
+    <!-- CANVAS BACKGROUND -->
+    <canvas id="bg-canvas"></canvas>
+    
+    <!-- CUSTOM CURSOR -->
+    <div class="custom-cursor" id="cursor"></div>
+
+    <div class="app-container">
+        <!-- NAVBAR (DESKTOP) -->
+        <nav class="navbar">
+            <div class="nav-logo">
+                <img src="https://i.imgur.com/dYDYcjX.png" alt="WaveX Logo">
+            </div>
+            <div class="nav-sep"></div>
+            <div class="nav-item active" data-target="home" data-tooltip="Início">
+                <i class="ph ph-house"></i>
+            </div>
+            <div class="nav-item" data-target="historia" data-tooltip="Histórico">
+                <i class="ph ph-hourglass-medium"></i>
+            </div>
+            <div class="nav-item" data-target="efeacademy" data-tooltip="E-Academy">
+                <i class="ph ph-graduation-cap"></i>
+            </div>
+            <div class="nav-item" data-target="revista" data-tooltip="OceanTimes">
+                <i class="ph ph-newspaper"></i>
+            </div>
+            <!-- NEW OCEANDATA ICON -->
+            <div class="nav-item" id="nav-oceandata" data-tooltip="OceanData (Em Breve)">
+                <i class="ph ph-chart-polar"></i>
+            </div>
+            <div class="nav-item" data-target="mural" data-tooltip="Mural">
+                <i class="ph ph-push-pin"></i>
+            </div>
+            <div class="nav-item" data-target="dev" data-tooltip="Dev">
+                <i class="ph ph-code"></i>
+            </div>
+        </nav>
+
+        <!-- HOME -->
+        <section id="home" class="page active">
+            <div class="hero-content animate-enter">
+                <div class="badge">ESCOLA DE FORMAÇÃO DE EXECUTIVOS</div>
+                <h1 class="hero-title">WaveX</h1>
+                <p class="hero-desc">Revolucionando o ensino na Polícia RCC. Uma plataforma imersiva, moderna e livre de limitações. O futuro da liderança começa aqui.</p>
+                <div class="home-btn-group">
+                    <button class="btn-primary nav-trigger" data-target="efeacademy">
+                        CONFERIR AULAS <i class="ph-bold ph-graduation-cap"></i>
+                    </button>
+                    <button class="btn-secondary nav-trigger" data-target="historia">
+                        SOBRE NÓS <i class="ph-bold ph-info"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="hero-image-container animate-enter delay-100">
+                <img src="https://i.imgur.com/zb3NOoN.png" class="hero-img-character" alt="Character">
+            </div>
+        </section>
+
+        <!-- HISTÓRIA -->
+        <section id="historia" class="page">
+            <div class="hist-left animate-enter">
+                <div class="hist-title">
+                    <h2>Nossa<br>História</h2>
+                    <span>LEGADO & LIDERANÇA</span>
+                </div>
+            </div>
+            <div class="hist-right">
+                
+                <!-- MOBILE CONTROLS: Timeline (ACIMA DA DATA) -->
+                <div class="mobile-hist-controls animate-enter delay-100">
+                     <div class="mobile-control-btn" id="mob-prev-year"><i class="ph-bold ph-caret-left"></i></div>
+                     <span style="font-size:10px; color:#666; font-weight:700; text-transform:uppercase;">LINHA DO TEMPO</span>
+                     <div class="mobile-control-btn" id="mob-next-year"><i class="ph-bold ph-caret-right"></i></div>
+                </div>
+
+                <div class="year-display animate-enter delay-100" data-year="2014">2014</div>
+                <div class="hist-content-box animate-enter delay-200">
+                    <p class="hist-text" id="hist-description">
+                        O início de tudo. A Escola de Formação de Executivos foi fundada com o propósito de padronizar o conhecimento dos oficiais da RCC.
+                    </p>
+                    
+                    <!-- MOBILE CONTROLS: Leaders (ACIMA DO TÍTULO DE LIDERANÇA) -->
+                    <div class="mobile-leader-controls">
+                        <div class="mobile-control-btn" id="mob-prev-leader"><i class="ph-bold ph-caret-left"></i></div>
+                        <span style="font-size:10px; color:#666; font-weight:700; text-transform:uppercase;">LÍDERES</span>
+                        <div class="mobile-control-btn" id="mob-next-leader"><i class="ph-bold ph-caret-right"></i></div>
+                   </div>
+
+                    <h4 class="leaders-section-title">Liderança</h4>
+                    <div class="leaders-grid"></div>
+                </div>
+
+                <!-- DESKTOP CONTROLS (Hidden on mobile) -->
+                <div class="hist-controls-container animate-enter delay-300">
+                    <div class="hist-btn-group">
+                        <span class="hist-btn-label">LINHA DO TEMPO</span>
+                        <div class="hist-nav-btn" id="prev-year"><i class="ph-bold ph-caret-left"></i></div>
+                        <div class="hist-nav-btn" id="next-year"><i class="ph-bold ph-caret-right"></i></div>
+                    </div>
+                    <div class="hist-btn-group">
+                        <span class="hist-btn-label">LÍDERES</span>
+                        <div class="hist-nav-btn" id="prev-leader"><i class="ph-bold ph-caret-left"></i></div>
+                        <div class="hist-nav-btn" id="next-leader"><i class="ph-bold ph-caret-right"></i></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- E-ACADEMY -->
+        <section id="efeacademy" class="page">
+            <div class="academy-container">
+                <div class="academy-sidebar animate-enter">
+                    <div class="filter-title"><i class="ph-fill ph-books"></i> Biblioteca</div>
+                    
+                    <!-- DESKTOP MENU -->
+                    <ul class="sidebar-menu">
+                        <li class="filter-opt active" data-filter="all">
+                            <i class="ph ph-squares-four"></i> Todos os Cursos
+                        </li>
+                        <li class="filter-opt" data-filter="aulas">
+                            <i class="ph ph-monitor-play"></i> Aulas Básicas
+                        </li>
+                        <li class="filter-opt" data-filter="capacitacoes">
+                            <i class="ph ph-chalkboard"></i> Capacitações
+                        </li>
+                        <li class="filter-opt" data-filter="admissao">
+                            <i class="ph ph-clipboard-text"></i> Teste de Admissão
+                        </li>
+                        <li class="filter-opt" data-filter="graduacoes">
+                            <i class="ph ph-medal"></i> Graduações
+                        </li>
+                    </ul>
+
+                    <!-- MOBILE DROPDOWN MENU -->
+                    <div class="mobile-academy-dropdown">
+                        <div class="mobile-dropdown-btn" id="mobile-filter-btn">
+                            <span><i class="ph-fill ph-funnel"></i> Filtrar: Todos</span>
+                            <i class="ph-bold ph-caret-down"></i>
+                        </div>
+                        <div class="mobile-dropdown-list" id="mobile-filter-list">
+                            <div class="mobile-dropdown-item active" data-filter="all">Todos os Cursos</div>
+                            <div class="mobile-dropdown-item" data-filter="aulas">Aulas Básicas</div>
+                            <div class="mobile-dropdown-item" data-filter="capacitacoes">Capacitações</div>
+                            <div class="mobile-dropdown-item" data-filter="admissao">Teste de Admissão</div>
+                            <div class="mobile-dropdown-item" data-filter="graduacoes">Graduações</div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="academy-content">
+                    <div class="section-header-academy animate-enter">
+                        <div>
+                            <h2>E-Academy</h2>
+                            <p>Selecione um módulo para iniciar seus estudos.</p>
+                        </div>
+                    </div>
+                    <div class="cards-grid">
+                        <!-- AULAS -->
+                        <!-- APB -->
+                        <div class="course-card academy-card animate-enter delay-100" data-category="aulas" data-course-id="apb">
+                            <div class="course-thumb">
+                                <span class="course-type type-aula">AULA</span>
+                                <i class="ph ph-shield-check course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">APB</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-user"></i> Trainee+
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Continuar</span> 
+                                    <i class="ph-bold ph-arrow-right"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- API -->
+                        <div class="course-card academy-card animate-enter delay-100" data-category="aulas" data-course-id="api" data-pin="4321">
+                            <div class="course-thumb">
+                                <span class="course-type type-aula">AULA</span>
+                                <i class="ph ph-book-bookmark course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">API</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-user"></i> Assessor+
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Desbloquear</span> 
+                                    <i class="ph-bold ph-lock-open"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- APA -->
+                        <div class="course-card academy-card animate-enter delay-100" data-category="aulas" data-course-id="apa">
+                            <div class="course-thumb">
+                                <span class="course-type type-aula">AULA</span>
+                                <i class="ph ph-briefcase course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">APA</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-user"></i> Secretário+
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Iniciar</span> 
+                                    <i class="ph-bold ph-play"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AFP -->
+                        <div class="course-card academy-card animate-enter delay-100" data-category="aulas" data-course-id="afp">
+                            <div class="course-thumb">
+                                <span class="course-type type-aula">AULA</span>
+                                <i class="ph ph-chalkboard-teacher course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">AFP</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-user"></i> Assistente+
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Iniciar</span> 
+                                    <i class="ph-bold ph-play"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AFO -->
+                        <div class="course-card academy-card animate-enter delay-100" data-category="aulas" data-course-id="afo">
+                            <div class="course-thumb">
+                                <span class="course-type type-aula">AULA</span>
+                                <i class="ph ph-star-half course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">AFO</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-user"></i> Superintendente+
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Iniciar</span> 
+                                    <i class="ph-bold ph-play"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CICE -->
+                        <div class="course-card academy-card animate-enter delay-100" data-category="aulas" data-course-id="cice">
+                            <div class="course-thumb">
+                                <span class="course-type type-aula">AULA</span>
+                                <i class="ph ph-brain course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">CICE</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-user"></i> Secretário+/Sargento+
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Iniciar</span> 
+                                    <i class="ph-bold ph-play"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AFCE -->
+                        <div class="course-card academy-card animate-enter delay-100" data-category="aulas" data-course-id="afce">
+                            <div class="course-thumb">
+                                <span class="course-type type-aula">AULA</span>
+                                <i class="ph ph-crown course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">AFCE</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-user"></i> Subtenente+
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Iniciar</span> 
+                                    <i class="ph-bold ph-play"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AvCE -->
+                        <div class="course-card academy-card animate-enter delay-100" data-category="aulas" data-course-id="avce">
+                            <div class="course-thumb">
+                                <span class="course-type type-aula">AULA</span>
+                                <i class="ph ph-check-circle course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">AvCE</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-user"></i> Trainee+
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Iniciar</span> 
+                                    <i class="ph-bold ph-play"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- --- CAPACITAÇÕES --- -->
+                        <!-- Cap. Teórica de Professor -->
+                        <div class="course-card academy-card animate-enter delay-100" data-category="capacitacoes" data-course-id="cap_teorica">
+                            <div class="course-thumb">
+                                <span class="course-type type-cap">CAPACITAÇÃO</span>
+                                <i class="ph ph-chalkboard course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">Cap. Teórica de Professor</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-user"></i> Professor
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Iniciar</span> 
+                                    <i class="ph-bold ph-play"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cap. Documental Executiva -->
+                        <div class="course-card academy-card animate-enter delay-100" data-category="capacitacoes" data-course-id="cap_doc">
+                            <div class="course-thumb">
+                                <span class="course-type type-cap">CAPACITAÇÃO</span>
+                                <i class="ph ph-files course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">Cap. Documental Executiva</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-user"></i> Prof/Mentor/Analista+
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Iniciar</span> 
+                                    <i class="ph-bold ph-play"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Avaliação Executiva Básica (Em Breve) -->
+                        <div class="course-card academy-card animate-enter delay-100 disabled" data-category="capacitacoes" data-course-id="av_exec">
+                            <div class="course-thumb">
+                                <span class="course-type type-cap" style="background:#333; color:#fff;">EM BREVE</span>
+                                <i class="ph ph-chart-bar course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">Avaliação Executiva Básica</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-lock-key"></i> Analistas+ Esp. Básica
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Indisponível</span> 
+                                    <i class="ph-bold ph-prohibit"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TESTE DE ADMISSÃO -->
+                        <div class="course-card academy-card animate-enter delay-200" data-category="admissao" data-course-id="admission" data-pin="1234">
+                            <div class="course-thumb">
+                                <span class="course-type type-teste">TESTE</span>
+                                <i class="ph ph-file-lock course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">Teste de Admissão</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-lock-key"></i> Cabos+/Assessor+ c/ SEG
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Desbloquear</span> 
+                                    <i class="ph-bold ph-lock-open"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GRADUAÇÕES -->
+                        <!-- Básica -->
+                        <div class="course-card academy-card animate-enter delay-200" data-category="graduacoes" data-course-id="grad_basic" data-pin="1234">
+                            <div class="course-thumb">
+                                <span class="course-type type-grad">GRADUAÇÃO</span>
+                                <i class="ph ph-star course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">Graduação Básica</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-medal"></i> Professor
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Desbloquear</span> 
+                                    <i class="ph-bold ph-lock-open"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Intermediária -->
+                        <div class="course-card academy-card animate-enter delay-200" data-category="graduacoes" data-course-id="grad_inter" data-pin="1234">
+                            <div class="course-thumb">
+                                <span class="course-type type-grad">GRADUAÇÃO</span>
+                                <i class="ph ph-star-half course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">Graduação Intermediária</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-medal"></i> Mentor
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Desbloquear</span> 
+                                    <i class="ph-bold ph-lock-open"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Avançada -->
+                        <div class="course-card academy-card animate-enter delay-200" data-category="graduacoes" data-course-id="grad_adv" data-pin="1234">
+                            <div class="course-thumb">
+                                <span class="course-type type-grad">GRADUAÇÃO</span>
+                                <i class="ph ph-star-four course-icon"></i>
+                            </div>
+                            <div class="course-body">
+                                <div>
+                                    <h3 class="course-title">Graduação Avançada</h3>
+                                    <div class="course-meta">
+                                        <i class="ph-fill ph-medal"></i> Capacitador
+                                    </div>
+                                </div>
+                                <div class="card-action">
+                                    <span>Desbloquear</span> 
+                                    <i class="ph-bold ph-lock-open"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div><!-- cards-grid -->
+                </div>
+            </div>
+        </section>
+
+        <!-- OCEANTIMES -->
+        <section id="revista" class="page">
+            <div class="news-portal-container animate-enter" style="display: block;">
+                <div class="news-header">
+                    <div>
+                        <div class="ocean-times-logo">
+                            OceanTimes
+                            <span>Editorial News</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:20px; align-items:center;">
+                        <div class="news-nav-controls">
+                            <div class="news-nav-btn" id="news-prev"><i class="ph-bold ph-caret-left"></i></div>
+                            <div class="news-nav-btn" id="news-next"><i class="ph-bold ph-caret-right"></i></div>
+                        </div>
+                        <div class="search-box-enhanced">
+                            <i class="ph ph-magnifying-glass"></i>
+                            <input type="text" id="news-search" placeholder="Pesquisar no OceanTimes...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="news-layout-wrapper" id="news-layout">
+                    <!-- FEATURED -->
+                    <div class="news-featured-main news-trigger" id="news-featured">
+                        <img src="https://i.imgur.com/1DcFE9V.png" alt="">
+                        <div class="news-featured-content">
+                            <span class="news-cat-badge">TECNOLOGIA</span>
+                            <h3 class="news-featured-title">A Nova Era da Tecnologia Militar na RCC</h3>
+                            <div class="news-meta">
+                                <span><i class="ph-fill ph-user-circle"></i> Gen. Silva</span>
+                                <span><i class="ph-fill ph-clock"></i> 2 horas atrás</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SIDEBAR LIST -->
+                    <div class="news-sidebar-list" id="news-sidebar">
+                        <!-- preenchido dinamicamente -->
+                    </div>
+                </div>
+
+                <div id="news-empty-message" class="news-empty" style="display:none;">
+                    Nenhuma notícia encontrada para o termo pesquisado.
+                </div>
+            </div>
+        </section>
+
+        <!-- MURAL -->
+        <section id="mural" class="page">
+            <div class="container" style="flex-direction:column; align-items:center;">
+                <h1 class="mural-title-styled animate-enter" id="mural-title">Mural de Membros</h1>
+                <div class="wall-container animate-enter delay-200" id="wall-grid">
+                    <!-- Static Note Example with New Structure -->
+                    <div class="wall-note animate-enter" data-msg="Orgulho de fazer parte desta história! A WaveX mudou tudo." data-user="ofranco6830" data-role="Líder" data-avatar="https://www.habbo.com.br/habbo-imaging/avatarimage?user=ofranco6830&direction=2&head_direction=3&gesture=sml&size=l&headonly=1">
+                        <div class="wall-avatar-container">
+                            <img src="https://www.habbo.com.br/habbo-imaging/avatarimage?user=ofranco6830&direction=2&head_direction=3&gesture=sml&size=l&headonly=0" class="wall-avatar" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTkuMDkgOWEzIDMgMCAwIDEgNS44MyAxYzAgMi0zIDMtMyAzIi8+PGxpbmUgeDE9IjEyIiB5MT0iMTciIHgyPSIxMi4wMSIgeTI9IjE3Ii8+PC9zdmc+';">
+                        </div>
+                        <div class="wall-content">
+                            <div class="wall-user">ofranco6830</div>
+                            <div class="wall-role">Líder</div>
+                        </div>
+                        <div class="wall-status">
+                             <div class="status-dot"></div>
+                        </div>
+                    </div>
+
+                    <!-- Example of Inactive Member -->
+                    <div class="wall-note inactive animate-enter" data-msg="Sentirei saudades." data-user="antigoMembro" data-role="Ex-Membro" data-avatar="https://www.habbo.com.br/habbo-imaging/avatarimage?user=Frank&direction=2&head_direction=3&gesture=sml&size=l&headonly=1">
+                        <div class="wall-avatar-container">
+                            <img src="https://www.habbo.com.br/habbo-imaging/avatarimage?user=Frank&direction=2&head_direction=3&gesture=sml&size=l&headonly=0" class="wall-avatar" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTkuMDkgOWEzIDMgMCAwIDEgNS44MyAxYzAgMi0zIDMtMyAzIi8+PGxpbmUgeDE9IjEyIiB5MT0iMTciIHgyPSIxMi4wMSIgeTI9IjE3Ii8+PC9zdmc+';">
+                        </div>
+                        <div class="wall-content">
+                            <div class="wall-user">Frank</div>
+                            <div class="wall-role">Inativo</div>
+                        </div>
+                        <div class="wall-status">
+                             <div class="status-dot"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="add-note-btn" id="add-note-trigger"><i class="ph-bold ph-plus"></i></div>
+            </div>
+        </section>
+
+        <!-- LETTER MODAL -->
+        <div class="modal-backdrop" id="letter-modal">
+            <div class="letter-paper">
+                <div class="letter-close" id="close-letter"><i class="ph-bold ph-x"></i></div>
+                <div class="letter-header">
+                    <img src="" class="letter-avatar" id="letter-avatar-img">
+                    <div class="letter-meta">
+                        <h3 id="letter-author">Nickname</h3>
+                        <span id="letter-role">Cargo</span>
+                    </div>
+                </div>
+                <div class="letter-body" id="letter-text">
+                    <!-- Content -->
+                </div>
+                <div class="letter-footer">
+                    Atenciosamente,<br>
+                    <span class="signature-font" id="letter-signature">Nickname</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORM MODAL (GENERICO PARA MURAL) -->
+        <div class="modal-backdrop" id="form-modal">
+            <div class="modal-close-fixed" id="close-form-modal"><i class="ph-bold ph-x"></i></div>
+            <div class="form-modal-content" id="form-content-wrapper">
+                <!-- Injetado via JS -->
+            </div>
+        </div>
+
+        <!-- DEV -->
+        <section id="dev" class="page">
+            <div class="dev-header animate-enter" style="width:100%; max-width:1200px; margin:0 auto 30px; text-align:left; padding:0 20px;">
+                <h2 style="font-family:'Kanit', sans-serif;font-size:34px;margin: 0 0 1px;color:#fff;letter-spacing:2px;">
+                    CRÉDITOS
+                </h2>
+                <p style="margin: 0 0 60px;color:#9bb;font-family:'Inter', sans-serif;font-weight:300;font-size: 13px;">
+                    Implementação, design e infraestrutura. A engenharia por trás do WaveX.
+                </p>
+
+                <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+                    <div style="display:flex; gap:10px; align-items:flex-start; background:rgba(255,255,255,0.03); padding:14px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); position:relative; height: 5em;">
+                        <!-- Habbo Avatar Left -->
+                        <img src="https://www.habbo.com.br/habbo-imaging/avatarimage?user=.Brendon&direction=2&head_direction=3&gesture=sml&size=l&headonly=0" style="width: auto;height: 130px;object-fit:none;object-position:center 25%;flex-shrink:0;bottom: 4.1em;position: relative;" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTkuMDkgOWEzIDMgMCAwIDEgNS44MyAxYzAgMi0zIDMtMyAzIi8+PGxpbmUgeDE9IjEyIiB5MT0iMTciIHgyPSIxMi4wMSIgeTI9IjE3Ii8+PC9zdmc+';">
+                        <!-- Text & Icon Container -->
+                        <div style="text-align:left; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+                            <div>
+                                <div style="font-weight:700; color:#fff; font-family:'Kanit'; margin-bottom:4px;">.Brendon</div>
+                            </div>
+                            <!-- Icon & Tag Bottom Right -->
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <i class="ph ph-code" style="font-size:16px; color:#fff;"></i>
+                                <span style="font-size:10px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; background:rgba(104,167,185,0.15); padding:3px 8px; border-radius:4px; border:1px solid rgba(104,167,185,0.3);">Frontend · UI / UX</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; align-items:flex-start; background:rgba(255,255,255,0.03); padding:14px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); position:relative;  height: 5em;">
+                        <!-- Habbo Avatar Left -->
+                        <img src="https://www.habbo.com.br/habbo-imaging/avatarimage?user=,youiz&direction=2&head_direction=3&gesture=sml&size=l&headonly=0" style="width: auto;height: 130px;object-fit:none;object-position:center 25%;flex-shrink:0;bottom: 4.1em;position: relative;" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTkuMDkgOWEzIDMgMCAwIDEgNS44MyAxYzAgMi0zIDMtMyAzIi8+PGxpbmUgeDE9IjEyIiB5MT0iMTciIHgyPSIxMi4wMSIgeTI9IjE3Ii8+PC9zdmc+';">
+                        <!-- Text & Icon Container -->
+                        <div style="text-align:left; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+                            <div>
+                                <div style="font-weight:700; color:#fff; font-family:'Kanit'; margin-bottom:4px;">,youiz</div>
+                            </div>
+                            <!-- Icon & Tag Bottom Right -->
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <i class="ph ph-code" style="font-size:16px; color:#fff;"></i>
+                                <span style="font-size:10px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; background:rgba(104,167,185,0.15); padding:3px 8px; border-radius:4px; border:1px solid rgba(104,167,185,0.3);">Backend · APIs</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; align-items:flex-start; background:rgba(255,255,255,0.03); padding:14px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); position:relative; height: 5em;">
+                        <!-- Habbo Avatar Left -->
+                        <img src="https://www.habbo.com.br/habbo-imaging/avatarimage?user=ofranco6830&direction=2&head_direction=3&gesture=sml&size=l&headonly=0" style="width: auto;height: 130px;object-fit:none;object-position:center 25%;flex-shrink:0;bottom: 4.1em;position: relative;" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTkuMDkgOWEzIDMgMCAwIDEgNS44MyAxYzAgMi0zIDMtMyAzIi8+PGxpbmUgeDE9IjEyIiB5MT0iMTciIHgyPSIxMi4wMSIgeTI9IjE3Ii8+PC9zdmc+';">
+                        <!-- Text & Icon Container -->
+                        <div style="text-align:left; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+                            <div>
+                                <div style="font-weight:700; color:#fff; font-family:'Kanit'; margin-bottom:4px;">ofranco6830</div>
+                            </div>
+                            <!-- Icon & Tag Bottom Right -->
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <i class="ph ph-lightbulb" style="font-size:16px; color:#fff;"></i>
+                                <span style="font-size:10px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; background:rgba(104,167,185,0.15); padding:3px 8px; border-radius:4px; border:1px solid rgba(104,167,185,0.3);">Product · Ideação</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <pre style="margin-top:18px; background:#071018; color:#7fffd4; padding:14px; border-radius:10px; font-family:'Courier New', monospace; font-size:13px; line-height:1.45; overflow:auto;">
+            {
+              "project": "WaveX",
+              "version": "1.0.0",
+              "credits": {
+                "lead": ".Brendon",
+                "backend": ",youiz",
+                "product": "ofranco6830"
+              },
+              "stack": ["HTML5", "CSS3", "JavaScript", "React", "JSON"]
+            }
+            </pre>
+            </div>
+        </section>
+    </div>
+
+    <!-- NEWS SLIDE SIDEBAR -->
+    <div class="modal-backdrop" id="news-modal">
+        <div class="modal-close-fixed" id="modal-close-news">
+            <i class="ph-bold ph-x"></i>
+        </div>
+        <div class="modal-news-content">
+            <img src="" class="news-article-header-img" id="modal-image">
+            <div class="news-article-body">
+                <span class="news-article-tag" id="modal-tag">GERAL</span>
+                <h1 class="news-article-title" id="modal-title">Título da Notícia</h1>
+                <div class="news-article-meta">
+                    <div class="news-author-lg" id="modal-author"></div>
+                    <div class="news-date-lg" id="modal-date"></div>
+                </div>
+                <div class="news-text-content" id="modal-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE READER -->
+    <div class="slide-viewer" id="slide-viewer">
+        <div class="slide-container-reader">
+            <div class="reader-header">
+                <div class="reader-course-info">
+                    <span class="reader-subtitle">VOCÊ ESTÁ ASSISTINDO</span>
+                    <span class="reader-title" id="slide-course-title">Nome do Curso</span>
+                </div>
+                <div class="reader-close" id="close-slides"><i class="ph-bold ph-x"></i></div>
+            </div>
+            <div class="reader-body">
+                <div class="reader-text-side">
+                    <h2 class="slide-content-title" id="slide-title">Título da Aula</h2>
+                    <div class="slide-content-text" id="slide-text"><p>Conteúdo textual da aula...</p></div>
+                </div>
+                <div class="reader-media-side">
+                    <div class="slide-img-wrapper" id="slide-image-container">
+                        <img id="slide-image" src="">
+                    </div>
+                </div>
+            </div>
+            <div class="reader-footer">
+                <div class="reader-controls">
+                    <div class="reader-btn" id="prev-slide"><i class="ph-fill ph-caret-left"></i></div>
+                    <div class="reader-progress-container">
+                        <div class="reader-progress-bar">
+                            <div class="reader-progress-fill" id="slide-progress-fill"></div>
+                        </div>
+                        <div class="reader-progress-text" id="slide-counter">1 / 5</div>
+                    </div>
+                    <div class="reader-btn" id="next-slide"><i class="ph-fill ph-caret-right"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- PERFORMANCE MODE LOGIC ---
+        const perfToggle = document.getElementById('perf-toggle');
+        const perfIcon = perfToggle.querySelector('i');
+        const perfTooltip = perfToggle.querySelector('.perf-tooltip');
+        let isTurboMode = false; // Default is Performance (false)
+        let animationFrameId = null;
+
+        // Mobile Perf Elements
+        const mobilePerfBtn = document.getElementById('mobile-perf-toggle');
+        const mobilePerfIcon = document.getElementById('mobile-perf-icon');
+        const mobilePerfText = document.getElementById('mobile-perf-text');
+
+        // Check local storage on load
+        const savedMode = localStorage.getItem('wavex_mode');
+        if (savedMode === 'turbo') {
+            isTurboMode = true;
+        } else {
+            isTurboMode = false; // Explicitly set false if null or other value
+        }
+
+        function applyPerformanceMode() {
+            const body = document.body;
+            
+            if (isTurboMode) {
+                // Ativar TURBO
+                body.classList.remove('performance-mode');
+                
+                // Desktop Icon Update
+                perfIcon.classList.replace('ph-battery-low', 'ph-lightning');
+                perfIcon.style.color = '#ffb703';
+                perfTooltip.textContent = "Modo: Turbo";
+                
+                // Mobile Icon Update
+                mobilePerfIcon.classList.replace('ph-battery-low', 'ph-lightning');
+                mobilePerfIcon.style.color = '#ffb703';
+                mobilePerfText.textContent = "Turbo";
+
+                // Iniciar Canvas e Cursor
+                if (!animationFrameId) animateCanvas();
+                document.getElementById('bg-canvas').style.opacity = '1';
+                // O cursor customizado deve ser desabilitado no mobile, mesmo no modo turbo, para performance em touch
+                if (window.innerWidth > 980) {
+                     document.getElementById('cursor').style.display = 'block';
+                }
+                
+                // Reset canvas type based on active page if needed
+                const activeNav = document.querySelector('.nav-item.active');
+                if(activeNav) {
+                    const target = activeNav.getAttribute('data-target');
+                    setCanvasEffectForPage(target);
+                }
+            } else {
+                // Ativar PERFORMANCE
+                body.classList.add('performance-mode');
+                
+                // Desktop Icon Update
+                perfIcon.classList.replace('ph-lightning', 'ph-battery-low');
+                perfIcon.style.color = '#fff';
+                perfTooltip.textContent = "Modo: Performance";
+
+                // Mobile Icon Update
+                mobilePerfIcon.classList.replace('ph-lightning', 'ph-battery-low');
+                mobilePerfIcon.style.color = '#fff';
+                mobilePerfText.textContent = "Performance";
+
+                // Parar Canvas para economizar CPU
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+                const cvs = document.getElementById('bg-canvas');
+                const cx = cvs.getContext('2d');
+                cx.clearRect(0, 0, cvs.width, cvs.height);
+                cvs.style.opacity = '0';
+                document.getElementById('cursor').style.display = 'none';
+            }
+        }
+
+        // Desktop Toggle Event
+        perfToggle.addEventListener('click', () => {
+            isTurboMode = !isTurboMode;
+            localStorage.setItem('wavex_mode', isTurboMode ? 'turbo' : 'performance');
+            applyPerformanceMode();
+        });
+
+        // Mobile Toggle Event
+        mobilePerfBtn.addEventListener('click', () => {
+            isTurboMode = !isTurboMode;
+            localStorage.setItem('wavex_mode', isTurboMode ? 'turbo' : 'performance');
+            applyPerformanceMode();
+        });
+
+        // LOADER
+        window.addEventListener('load', () => {
+            applyPerformanceMode(); // Apply mode on load
+            setTimeout(() => { document.getElementById('site-loader').classList.add('hidden'); }, 2000); 
+            updateHabboStatus(); // Check online status
+        });
+
+        // --- HABBO STATUS API ---
+        async function updateHabboStatus() {
+            const notes = document.querySelectorAll('.wall-note');
+            
+            notes.forEach(async (note) => {
+                const user = note.getAttribute('data-user');
+                if (!user) return;
+                
+                const dot = note.querySelector('.status-dot');
+                
+                try {
+                    // Using AllOrigins to proxy the request and avoid CORS issues in browser
+                    const targetUrl = `https://www.habbo.com.br/api/public/users?name=${user}`;
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+                    
+                    const response = await fetch(proxyUrl);
+                    const data = await response.json();
+                    
+                    if(data.contents) {
+                        const habboData = JSON.parse(data.contents);
+                        
+                        // LÓGICA DE STATUS: TRUE = VERDE, FALSE/ERRO = VERMELHO
+                        if (habboData.online === true) {
+                            dot.style.background = '#2ecc71'; // Green for Online
+                            dot.style.boxShadow = '0 0 8px #2ecc71';
+                            note.querySelector('.wall-status').title = "Online";
+                        } else {
+                            dot.style.background = '#e74c3c'; // Red for Offline
+                            dot.style.boxShadow = 'none';
+                            note.querySelector('.wall-status').title = "Offline";
+                        }
+                    } else {
+                        // Conteúdo vazio ou erro na API
+                        dot.style.background = '#e74c3c'; // Fallback Red
+                    }
+                } catch (e) {
+                    console.log('Status check failed for', user);
+                    // Fallback to offline look if fails
+                    if(dot) {
+                        dot.style.background = '#e74c3c'; // Red on error
+                        dot.style.boxShadow = 'none';
+                    }
+                }
+            });
+        }
+
+        // --- MOBILE MENU LOGIC ---
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileDrawer = document.getElementById('mobile-menu-drawer');
+        const mobileBackdrop = document.getElementById('mobile-menu-backdrop');
+        const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+
+        function toggleMobileMenu(show) {
+            if (show) {
+                mobileDrawer.classList.add('active');
+                mobileBackdrop.classList.add('active');
+                // Hide icon when menu opens
+                mobileMenuBtn.classList.add('hidden-icon');
+            } else {
+                mobileDrawer.classList.remove('active');
+                mobileBackdrop.classList.remove('active');
+                // Show icon when menu closes
+                mobileMenuBtn.classList.remove('hidden-icon');
+            }
+        }
+
+        mobileMenuBtn.addEventListener('click', () => toggleMobileMenu(true));
+        mobileBackdrop.addEventListener('click', () => toggleMobileMenu(false));
+
+        // --- NAVIGATION LOGIC (UNIFIED DESKTOP & MOBILE) ---
+        const navItems = document.querySelectorAll('.nav-item:not(#nav-oceandata)'); 
+        const pages = document.querySelectorAll('.page'); 
+        // Include mobile items in triggers
+        const allNavTriggers = document.querySelectorAll('.nav-item:not(#nav-oceandata), .nav-trigger, .mobile-nav-item:not([data-target="oceandata_mobile"])'); 
+        
+        allNavTriggers.forEach(item => {
+            item.addEventListener('click', () => {
+                const target = item.getAttribute('data-target');
+                if (!target) return;
+
+                // Update Active State in Desktop Navbar
+                navItems.forEach(nav => {
+                    if(nav.getAttribute('data-target') === target) nav.classList.add('active');
+                    else nav.classList.remove('active');
+                });
+
+                // Update Active State in Mobile Sidebar
+                mobileNavItems.forEach(mnav => {
+                    if(mnav.getAttribute('data-target') === target) mnav.classList.add('active');
+                    else mnav.classList.remove('active');
+                });
+
+                // Switch Page
+                pages.forEach(page => page.classList.remove('active'));
+                const targetPage = document.getElementById(target);
+                if (targetPage) targetPage.classList.add('active');
+
+                // Set Canvas Effect
+                setCanvasEffectForPage(target);
+
+                // Re-trigger animations
+                targetPage.querySelectorAll('.animate-enter').forEach(el => {
+                    el.style.animation = 'none';
+                    void el.offsetHeight;
+                    if(isTurboMode) el.style.animation = null;
+                    else el.style.opacity = 1;
+                });
+
+                if (target === 'mural' && isTurboMode) {
+                    const muralTitle = document.getElementById('mural-title');
+                    if (muralTitle) {
+                        // Remove inline animation to force reflow, then restore to allow CSS-defined animation to run.
+                        muralTitle.style.animation = 'none';
+                        void muralTitle.offsetHeight; // Força reflow/re-render
+                        muralTitle.style.animation = ''; // Restaura animação definida no CSS
+                    }
+                }
+
+                // Close Mobile Menu if open
+                toggleMobileMenu(false);
+            });
+        });
+
+        // CANVAS BACKGROUND SYSTEM
+        const canvas = document.getElementById('bg-canvas'); 
+        const ctx = canvas.getContext('2d');
+        let width, height, particles = [], currentEffect = 'constellation'; 
+        let mouse = { x: null, y: null };
+
+        // --- PARTICLE CLASSES FOR NEW EFFECTS ---
+
+        // 1. Home: Constellation
+        class ConstellationParticle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if(mouse.x != null) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if(dist < 100) {
+                        this.x -= dx * 0.02;
+                        this.y -= dy * 0.02;
+                    }
+                }
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(104, 167, 185, 0.8)';
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+
+        // 2. História: Flow Field
+        class FlowParticle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = Math.random() * 3 + 1;
+                this.len = Math.random() * 60 + 20;
+                this.alpha = Math.random() * 0.3 + 0.1;
+            }
+            update() {
+                this.x += this.vx;
+                if (this.x > width) {
+                    this.x = -this.len;
+                    this.y = Math.random() * height;
+                }
+            }
+            draw() {
+                ctx.strokeStyle = `rgba(104, 167, 185, ${this.alpha})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x - this.len, this.y); ctx.stroke();
+            }
+        }
+
+        // 3. Academy: Neural Nodes
+        class NeuralParticle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.3;
+                this.vy = (Math.random() - 0.5) * 0.3;
+                this.baseSize = Math.random() * 3 + 2;
+                this.angle = Math.random() * Math.PI * 2;
+                this.speed = 0.05;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                this.angle += this.speed;
+                this.currentSize = this.baseSize + Math.sin(this.angle) * 1;
+                if (this.x < 0) this.x = width; if (this.x > width) this.x = 0;
+                if (this.y < 0) this.y = height; if (this.y > height) this.y = 0;
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.beginPath(); ctx.arc(this.x, this.y, Math.max(0, this.currentSize), 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = 'rgba(104, 167, 185, 0.15)';
+                ctx.beginPath(); ctx.arc(this.x, this.y, Math.max(0, this.currentSize * 2), 0, Math.PI * 2); ctx.stroke();
+            }
+        }
+
+        // 4. Revista: Ocean Waves
+        class WaveParticle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.baseY = Math.random() * height;
+                this.y = this.baseY;
+                this.speed = Math.random() * 0.02 + 0.01;
+                this.offset = Math.random() * 100;
+                this.amp = Math.random() * 50 + 20;
+                this.color = Math.random() > 0.5 ? 'rgba(104, 167, 185, 0.4)' : 'rgba(255, 255, 255, 0.2)';
+            }
+            update(time) {
+                // Movimento da onda com base no tempo e posição X
+                this.y = this.baseY + Math.sin(time * this.speed + this.offset + (this.x * 0.005)) * this.amp;
+                // Movimento lento para a direita
+                this.x += 0.3;
+                if(this.x > width) this.x = -5;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(this.x, this.y, 1.5, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        // 5. Mural: Confetti
+        class ConfettiParticle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 10 + 5;
+                this.color = `rgba(104, 167, 185, ${Math.random() * 0.5 + 0.3})`;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.spin = (Math.random() - 0.5) * 0.05;
+                this.shape = Math.floor(Math.random() * 3); // 0=Square, 1=Circle, 2=Triangle
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                this.rotation += this.spin;
+                
+                // Simulação de gravidade e atrito (bem leve)
+                this.vy += 0.005; 
+                this.vx *= 0.998;
+                
+                if (this.x < -this.size || this.x > width + this.size) this.vx *= -1;
+                if (this.y > height + this.size) { 
+                    this.y = -this.size; // Reinicia no topo
+                    this.x = Math.random() * width;
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.fillStyle = this.color;
+                
+                if (this.shape === 0) {
+                    ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                } else if (this.shape === 1) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(0, -this.size / 2);
+                    ctx.lineTo(this.size / 2, this.size / 2);
+                    ctx.lineTo(-this.size / 2, this.size / 2);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+        }
+
+
+        // 7. Dev: Code Rain
+        class CodeRainParticle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * -height;
+                this.speed = Math.random() * 3 + 1;
+                this.text = this.generateCode();
+                this.fontSize = Math.random() * 10 + 10;
+                this.opacity = Math.random() * 0.5 + 0.2;
+            }
+            generateCode() {
+                const snippets = [
+                    "function()", "var x = 0;", "if(true){", "return;", "import React", 
+                    "console.log", "<div></div>", "const data", "await fetch()", "=> {}", 
+                    "class Dev", "extends", "constructor", "this.state", "render()"
+                ];
+                return snippets[Math.floor(Math.random() * snippets.length)];
+            }
+            update() {
+                this.y += this.speed;
+                if(this.y > height) {
+                    this.y = -50;
+                    this.x = Math.random() * width;
+                    this.text = this.generateCode();
+                }
+            }
+            draw() {
+                ctx.fillStyle = `rgba(104, 167, 185, ${this.opacity})`; // Primary color glow
+                ctx.font = `${this.fontSize}px 'Courier New', monospace`;
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = "rgba(104, 167, 185, 0.5)";
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // Initialize Specific Effect
+        const initCanvas = (mode) => {
+            width = canvas.width = window.innerWidth; 
+            height = canvas.height = window.innerHeight; 
+            particles = []; 
+            currentEffect = mode;
+            
+            if (!isTurboMode) return; 
+
+            let count = 0;
+            if (mode === 'constellation') count = 80;
+            else if (mode === 'flow') count = 100;
+            else if (mode === 'neural') count = 60;
+            else if (mode === 'waves') count = 150; 
+            else if (mode === 'confetti') count = 50; // Novo efeito confetti
+            else if (mode === 'matrix') count = 40;
+            else count = 50;
+
+            for (let i = 0; i < count; i++) {
+                if (mode === 'constellation') particles.push(new ConstellationParticle());
+                else if (mode === 'flow') particles.push(new FlowParticle());
+                else if (mode === 'neural') particles.push(new NeuralParticle());
+                else if (mode === 'waves') particles.push(new WaveParticle());
+                else if (mode === 'confetti') particles.push(new ConfettiParticle()); // Adicionado Confetti
+                else if (mode === 'matrix') particles.push(new CodeRainParticle());
+                else particles.push(new ConstellationParticle());
+            }
+        };
+
+        let globalTime = 0;
+        const animateCanvas = () => {
+            if (!isTurboMode) {
+                animationFrameId = null;
+                return;
+            }
+
+            globalTime++;
+            
+            // Background semi-transparente para o trail effect
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.05)';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Reinicia o fundo apenas no modo matrix para não ter trail
+            if (currentEffect === 'matrix') {
+                ctx.fillStyle = 'rgba(5, 5, 5, 1)';
+                ctx.fillRect(0, 0, width, height);
+            }
+
+
+            if (currentEffect === 'constellation') {
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update(); particles[i].draw();
+                    for (let j = i; j < particles.length; j++) {
+                        let dx = particles[i].x - particles[j].x;
+                        let dy = particles[i].y - particles[j].y;
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        if(dist < 120) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = `rgba(104, 167, 185, ${1 - dist/120})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            } 
+            else if (currentEffect === 'neural') {
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update(); particles[i].draw();
+                    for (let j = i; j < particles.length; j++) {
+                        let dx = particles[i].x - particles[j].x;
+                        let dy = particles[i].y - particles[j].y;
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        if(dist < 150) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = `rgba(255, 255, 255, ${0.2 - (dist/150)*0.2})`;
+                            ctx.lineWidth = 0.2;
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+            else {
+                for (let i = 0; i < particles.length; i++) {
+                    // Passa o globalTime para WaveParticle, mas é ignorado por outros efeitos simples.
+                    particles[i].update(globalTime); 
+                    particles[i].draw();
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(animateCanvas);
+        };
+
+        window.addEventListener('resize', () => {
+            if(isTurboMode) initCanvas(currentEffect);
+        });
+        window.addEventListener('mousemove', (e) => { mouse.x = e.x; mouse.y = e.y; });
+        window.addEventListener('mouseout', () => { mouse.x = null; mouse.y = null; });
+
+        initCanvas('constellation'); 
+
+        const cursor = document.getElementById('cursor'); 
+        let cursorX = 0, cursorY = 0; 
+        let mouseX = 0, mouseY = 0;
+
+        document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+
+        function animateCursor() {
+            if (isTurboMode) {
+                cursorX += (mouseX - cursorX) * 0.2; 
+                cursorY += (mouseY - cursorY) * 0.2; 
+                cursor.style.left = cursorX + 'px'; 
+                cursor.style.top = cursorY + 'px'; 
+            }
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        const clickables = document.querySelectorAll('a, button, .nav-item, .leader-card, .academy-card, .news-featured-main, .news-side-card, input, select, textarea, .hist-nav-btn, .reader-btn, .news-nav-btn, .wall-note, .sub-nav-btn, .dev-card');
+        clickables.forEach(el => {
+            el.addEventListener('mouseenter', () => { 
+                // CRITICAL FIX: Somente mostrar o cursor em desktop
+                if(isTurboMode && window.innerWidth > 980) cursor.classList.add('hovered'); 
+            });
+            el.addEventListener('mouseleave', () => { 
+                if(isTurboMode) cursor.classList.remove('hovered'); 
+            });
+        });
+
+        function setCanvasEffectForPage(pageId) {
+            if(!isTurboMode) return;
+            let effect = 'constellation';
+            if (pageId === 'home') effect = 'constellation';
+            else if (pageId === 'historia') effect = 'flow';
+            else if (pageId === 'efeacademy') effect = 'neural';
+            // Efeito melhorado de ondas (OceanTimes)
+            else if (pageId === 'revista') effect = 'waves'; 
+            // 3. CORREÇÃO SOLICITADA: Novo efeito Confetti para o Mural
+            else if (pageId === 'mural') effect = 'confetti'; 
+            else if (pageId === 'dev') effect = 'matrix';
+            else effect = 'constellation';
+
+            const bgCanvas = document.getElementById('bg-canvas');
+            bgCanvas.style.transition = 'opacity 0.3s ease';
+            bgCanvas.style.opacity = '0';
+            setTimeout(() => {
+                initCanvas(effect);
+                bgCanvas.style.opacity = '1';
+            }, 300);
+        }
+
+        // FORM MODAL SYSTEM
+        const formModal = document.getElementById('form-modal');
+        const formContentWrapper = document.getElementById('form-content-wrapper');
+        const closeFormModal = document.getElementById('close-form-modal');
+
+        function openForm(htmlContent) {
+            formContentWrapper.innerHTML = htmlContent;
+            formModal.classList.add('active');
+        }
+
+        // MURAL POST MODAL
+        document.getElementById('add-note-trigger').addEventListener('click', () => {
+            const html = `
+                <div class="form-header">
+                    <h2 class="form-title">Postar no Mural</h2>
+                    <span class="form-subtitle">Deixe sua marca</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="note-nick">Nickname</label>
+                    <input type="text" class="form-input" id="note-nick" placeholder="Seu nick...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="note-role">Cargo</label>
+                    <!-- SELECT CORRIGIDO: O valor é o mesmo do texto, e o CSS foi aprimorado para cross-browser -->
+                    <select class="form-input" id="note-role">
+                        <option value="Professor" style="color:#fff;">Professor</option>
+                        <option value="Mentor" style="color:#fff;">Mentor</option>
+                        <option value="Capacitador" style="color:#fff;">Capacitador</option>
+                        <option value="Graduador" style="color:#fff;">Graduador</option>
+                        <option value="Estagiário" style="color:#fff;">Estagiário</option>
+                        <option value="Ministro" style="color:#fff;">Ministro</option>
+                        <option value="Vice-Líder" style="color:#fff;">Vice-Líder</option>
+                        <option value="Líder" style="color:#fff;">Líder</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="note-msg">Mensagem</label>
+                    <textarea class="form-textarea" id="note-msg" placeholder="Escreva sua carta..."></textarea>
+                </div>
+                <button class="form-btn-submit" id="submit-note">POSTAR</button>
+            `;
+            openForm(html);
+
+            // Bind Submit Event inside the newly created HTML
+            setTimeout(() => {
+                document.getElementById('submit-note').addEventListener('click', () => {
+                    const nick = document.getElementById('note-nick').value;
+                    const role = document.getElementById('note-role').value;
+                    const msg = document.getElementById('note-msg').value;
+                    
+                    if(nick && msg) {
+                        const grid = document.getElementById('wall-grid');
+                        const newNote = document.createElement('div');
+                        
+                        // Garante que o novo card tem a animação de entrada
+                        newNote.className = 'wall-note animate-enter'; 
+                        
+                        // New Avatar Generation
+                        const avatar = `https://www.habbo.com.br/habbo-imaging/avatarimage?user=${nick}&direction=2&head_direction=3&gesture=sml&size=l&headonly=1`;
+                        const avatarFull = `https://www.habbo.com.br/habbo-imaging/avatarimage?user=${nick}&direction=2&head_direction=3&gesture=sml&size=l&headonly=0`;
+                        
+                        // Fallback image SVG
+                        const fallbackImg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTkuMDkgOWEzIDMgMCAwIDEgNS44MyAxYzAgMi0zIDMtMyAzIi8+PGxpbmUgeDE9IjEyIiB5MT0iMTciIHgyPSIxMi4wMSIgeTI9IjE3Ii8+PC9zdmc+";
+
+                        newNote.setAttribute('data-msg', msg);
+                        newNote.setAttribute('data-user', nick);
+                        newNote.setAttribute('data-role', role);
+                        newNote.setAttribute('data-avatar', avatar);
+
+                        // New HTML Structure for Note with ONERROR
+                        newNote.innerHTML = `
+                            <div class="wall-avatar-container">
+                                <img src="${avatarFull}" class="wall-avatar" onerror="this.onerror=null; this.src='${fallbackImg}'">
+                            </div>
+                            <div class="wall-content">
+                                <div class="wall-user">${nick}</div>
+                                <div class="wall-role">${role}</div>
+                            </div>
+                            <div class="wall-status">
+                                <div class="status-dot"></div>
+                            </div>
+                        `;
+                        
+                        // Add click event to new note for letter modal
+                        newNote.addEventListener('click', () => {
+                            document.getElementById('letter-author').textContent = nick;
+                            document.getElementById('letter-role').textContent = role;
+                            document.getElementById('letter-text').innerHTML = msg;
+                            document.getElementById('letter-signature').textContent = nick;
+                            
+                            // Ensure only head is shown in letter header as requested
+                            const headUrl = `https://www.habbo.com.br/habbo-imaging/avatarimage?user=${nick}&direction=3&head_direction=3&gesture=sml&size=m&headonly=1`;
+                            
+                            const imgEl = document.getElementById('letter-avatar-img');
+                            imgEl.src = headUrl;
+                            imgEl.onerror = function() {
+                                this.onerror = null;
+                                this.src = fallbackImg;
+                            };
+                            
+                            letterModal.classList.add('active');
+                        });
+                        
+                        // Check Status
+                        updateHabboStatus();
+
+                        grid.prepend(newNote);
+                        formModal.classList.remove('active');
+                    }
+                });
+            }, 100);
+        });
+
+        closeFormModal.addEventListener('click', () => formModal.classList.remove('active'));
+        formModal.addEventListener('click', (e) => { if(e.target === formModal) formModal.classList.remove('active'); });
+
+
+        // DATA & REST OF LOGIC
+        const courseData = {
+            'apb': [
+                { title: "1. Introdução", text: "Bem-vindo à Aula de Policiamento Básico. O objetivo é formar a base do conhecimento policial.", image: "https://i.imgur.com/nhhz4Qx.png" },
+                { title: "2. Postura", text: "A postura do oficial deve ser exemplar. Mantenha-se ereto e atento a todo momento.", image: "https://i.imgur.com/nhhz4Qx.png" },
+                { title: "3. Comandos", text: "Os comandos básicos são: Sentido, Descansar e Continência. Treine-os exaustivamente.", image: "https://i.imgur.com/nhhz4Qx.png" }
+            ],
+            'api': [
+                { title: "1. Táticas Intermediárias", text: "Aprofundando o conhecimento em abordagens e rondas ostensivas." }
+            ],
+            'apa': [
+                { title: "1. Liderança", text: "Conceitos avançados de gestão de pelotão e hierarquia." }
+            ],
+            'afp': [
+                { title: "1. Pedagogia Policial", text: "Como instruir novos recrutas com eficiência e disciplina." }
+            ],
+            'afo': [
+                { title: "1. Oficialato", text: "Postura e deveres de um oficial superior." }
+            ],
+            'cice': [
+                { title: "1. Executivo", text: "Gerenciamento avançado de recursos humanos e táticos." }
+            ],
+            'afce': [
+                { title: "1. Alto Comando", text: "Estratégia global e comando de grandes operações." }
+            ],
+            'avce': [
+                { title: "Avaliação", text: "Teste prático de conhecimentos executivos." }
+            ],
+            'admission': [
+                { title: "Teste de Admissão", text: "Responda com atenção. O erro não é tolerado neste nível.", image: "https://i.imgur.com/GaYCrP0.png" }
+            ],
+            'grad_basic': [
+                { title: "Graduação Básica", text: "Módulo introdutório para a carreira de professor." }
+            ],
+            'grad_inter': [
+                { title: "Graduação Intermediária", text: "Desenvolvimento de mentoria e acompanhamento individual." }
+            ],
+            'grad_adv': [
+                { title: "Graduação Avançada", text: "Capacitação de novos instrutores e gestão educacional." }
+            ],
+            'cap_teorica': [
+                { title: "Capacitação Teórica de Professor", text: "Metodologias de ensino e oratória." }
+            ],
+            'cap_doc': [
+                { title: "Capacitação Documental Executiva", text: "Gerenciamento de logs, planilhas e relatórios." }
+            ],
+            'av_exec': [
+                { title: "Em Breve", text: "Este módulo ainda não está disponível." }
+            ]
+        };
+
+        const timelineData = [
+            { year: 2014, text: "O início de tudo. A Escola de Formação de Executivos foi fundada." },
+            { year: 2018, text: "A Era da Modernização. Implementação dos novos sistemas." },
+            { year: 2025, text: "O Futuro é agora. Com a plataforma WaveX." }
+        ];
+
+        const leadershipEras = [
+            {
+                leaders: [
+                    { name: "ofranco6830", role: "Fundador", date: "2014 - 2016", bio: "Visionário.", img: "https://www.habbo.com.br/habbo-imaging/avatarimage?user=ofranco6830&action=std&direction=2&head_direction=3&gesture=sml&size=l" },
+                    { name: "System", role: "Líder", date: "2014 - 2015", bio: "Expansão.", img: "https://www.habbo.com.br/habbo-imaging/avatarimage?user=System&action=std&direction=2&head_direction=3&gesture=sml&size=l" },
+                    { name: "Frank", role: "Conselheiro", date: "2014 - 2015", bio: "Gestão.", img: "https://www.habbo.com.br/habbo-imaging/avatarimage?user=Frank&action=std&direction=2&head_direction=3&gesture=sml&size=l" }
+                ]
+            }
+        ];
+
+        // TIMELINE
+        let currentYearIndex = 0;
+        const yearDisplay = document.querySelector('.year-display'); 
+        const descDisplay = document.getElementById('hist-description'); 
+        const leadersGrid = document.querySelector('.leaders-grid');
+
+        function updateTimeline(index) {
+            const data = timelineData[index]; 
+            descDisplay.style.opacity = 0; 
+            yearDisplay.style.opacity = 0;
+            setTimeout(() => {
+                yearDisplay.innerHTML = data.year; 
+                yearDisplay.setAttribute('data-year', data.year); 
+                descDisplay.innerText = data.text; 
+                descDisplay.style.opacity = 1; 
+                yearDisplay.style.opacity = 1; 
+                if(isTurboMode) {
+                    yearDisplay.style.animation = 'none'; 
+                    void yearDisplay.offsetHeight; 
+                    yearDisplay.style.animation = 'slideUp 0.5s forwards'; 
+                }
+            }, 300);
+        }
+
+        function updateLeaders() {
+            const data = leadershipEras[0]; 
+            leadersGrid.style.opacity = 0;
+            setTimeout(() => {
+                leadersGrid.innerHTML = ''; 
+                data.leaders.forEach((leader) => {
+                    const card = document.createElement('div'); 
+                    card.className = 'leader-card'; 
+                    // Fallback for leader images too
+                    const fallbackImg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTkuMDkgOWEzIDMgMCAwIDEgNS44MyAxYzAgMi0zIDMtMyAzIi8+PGxpbmUgeDE9IjEyIiB5MT0iMTciIHgyPSIxMi4wMSIgeTI9IjE3Ii8+PC9zdmc+";
+                    
+                    card.innerHTML = `
+                        <div class="leader-tooltip">
+                            <span class="tooltip-title">Sobre o Líder</span>
+                            <span>${leader.bio}</span>
+                        </div>
+                        <div class="leader-card-inner">
+                            <div class="leader-date">${leader.date}</div>
+                            <img src="${leader.img}" alt="${leader.name}" onerror="this.onerror=null; this.src='${fallbackImg}'">
+                            <div class="leader-info">
+                                <div class="leader-name">${leader.name}</div>
+                                <div class="leader-role">${leader.role}</div>
+                            </div>
+                        </div>
+                    `;
+                    leadersGrid.appendChild(card);
+                }); 
+                leadersGrid.style.opacity = 1; 
+            }, 300);
+        }
+
+        updateTimeline(0);
+        updateLeaders();
+
+        // Standard Controls (Desktop)
+        document.getElementById('prev-year').addEventListener('click', () => {
+            if(currentYearIndex > 0) { currentYearIndex--; updateTimeline(currentYearIndex); }
+        });
+        document.getElementById('next-year').addEventListener('click', () => {
+            if(currentYearIndex < timelineData.length-1) { currentYearIndex++; updateTimeline(currentYearIndex); }
+        });
+        
+        // Mobile Controls (Timeline)
+        document.getElementById('mob-prev-year').addEventListener('click', () => {
+            if(currentYearIndex > 0) { currentYearIndex--; updateTimeline(currentYearIndex); }
+        });
+        document.getElementById('mob-next-year').addEventListener('click', () => {
+            if(currentYearIndex < timelineData.length-1) { currentYearIndex++; updateTimeline(currentYearIndex); }
+        });
+
+
+        // SLIDE READER
+        const slideViewer = document.getElementById('slide-viewer');
+        let currentSlides = [], currentSlideIndex = 0;
+
+        function openSlides(courseId) {
+            currentSlides = courseData[courseId] || [{ title: "Erro", text: "Conteúdo não encontrado." }]; 
+            currentSlideIndex = 0; 
+            document.getElementById('slide-course-title').innerText = courseId.toUpperCase().replace('_', ' '); 
+            updateSlideView(); 
+            slideViewer.classList.add('active'); 
+        }
+
+        function updateSlideView() {
+            const slide = currentSlides[currentSlideIndex]; 
+            document.getElementById('slide-title').innerText = slide.title; 
+            document.getElementById('slide-text').innerHTML = `<p>${slide.text}</p>`; 
+            document.getElementById('slide-counter').innerHTML = `${currentSlideIndex + 1} <span style="color:#444; font-size:16px;">/ ${currentSlides.length}</span>`;
+            
+            const imgContainer = document.getElementById('slide-image-container');
+            if (slide.image) {
+                document.getElementById('slide-image').src = slide.image; 
+                imgContainer.style.display = 'block'; 
+            } else {
+                imgContainer.style.display = 'none'; 
+            }
+            
+            const progress = ((currentSlideIndex + 1) / currentSlides.length) * 100; 
+            document.getElementById('slide-progress-fill').style.width = `${progress}%`; 
+        }
+
+        document.getElementById('next-slide').addEventListener('click', () => {
+            if (currentSlideIndex < currentSlides.length - 1) { currentSlideIndex++; updateSlideView(); }
+        });
+        document.getElementById('prev-slide').addEventListener('click', () => {
+            if (currentSlideIndex > 0) { currentSlideIndex--; updateSlideView(); }
+        });
+        document.getElementById('close-slides').addEventListener('click', () => slideViewer.classList.remove('active'));
+
+        // ------- PIN LOGIC -------
+        function createPinOverlay(card) {
+            if (card.querySelector('.locked-overlay')) return;
+            const overlay = document.createElement('div');
+            overlay.className = 'locked-overlay card-pin-wrapper';
+            overlay.innerHTML = `
+                <div class="pin-wrapper-modern">
+                    <i class="ph-fill ph-lock-key" style="font-size:30px; color:var(--primary);"></i>
+                    <input type="password" class="pin-input-card pin-input-modern" maxlength="4" placeholder="PIN">
+                    <button class="pin-confirm-btn pin-btn-modern">ACESSAR</button>
+                    <div class="close-pin" style="margin-top:10px; font-size:12px; cursor:pointer;">Cancelar</div>
+                </div>
+            `;
+            card.appendChild(overlay);
+        }
+
+        function handleCardClick(card, event) {
+            if (card.classList.contains('disabled')) return; // Prevent clicks on disabled cards
+            if (event.target.closest('.card-pin-wrapper')) return;
+            const pin = card.getAttribute('data-pin');
+            const courseId = card.getAttribute('data-course-id');
+            
+            if (pin) {
+                createPinOverlay(card);
+                document.querySelectorAll('.course-card.pin-active').forEach(c => {
+                    if (c !== card) c.classList.remove('pin-active');
+                });
+                card.classList.add('pin-active');
+                const input = card.querySelector('.pin-input-card');
+                setTimeout(() => input && input.focus(), 80);
+            } else {
+                openSlides(courseId);
+            }
+        }
+
+        function handleConfirmPin(button, event) {
+            event.stopPropagation();
+            const card = button.closest('.course-card');
+            const input = card.querySelector('.pin-input-card');
+            const expectedPin = card.getAttribute('data-pin');
+            
+            if (input.value === expectedPin) {
+                card.classList.remove('pin-active');
+                openSlides(card.getAttribute('data-course-id'));
+                input.value = '';
+            } else {
+                if(isTurboMode) {
+                    input.classList.remove('shake');
+                    void input.offsetHeight;
+                    input.classList.add('shake');
+                }
+                input.style.borderColor = '#ff006e'; 
+                setTimeout(() => { 
+                    input.style.borderColor = 'var(--primary)'; 
+                }, 400);
+            }
+        }
+
+        function handleClosePin(closeBtn, event) {
+            event.stopPropagation();
+            const card = closeBtn.closest('.course-card');
+            if (card) {
+                card.classList.remove('pin-active');
+                const input = card.querySelector('.pin-input-card');
+                if (input) input.value = '';
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            const confirmBtn = e.target.closest('.pin-confirm-btn');
+            if (confirmBtn) { handleConfirmPin(confirmBtn, e); return; }
+            const closePinBtn = e.target.closest('.close-pin');
+            if (closePinBtn) { handleClosePin(closePinBtn, e); return; }
+            const card = e.target.closest('.course-card');
+            if (card) { handleCardClick(card, e); return; }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            const input = e.target;
+            if (!input.classList || !input.classList.contains('pin-input-card')) return;
+            const card = input.closest('.course-card');
+            const btn = card.querySelector('.pin-confirm-btn');
+            if (btn) handleConfirmPin(btn, e);
+        });
+
+        // FILTER (BIBLIOTECA) - Including Mobile Dropdown Logic
+        const academyFilters = document.querySelectorAll('#efeacademy .filter-opt'); 
+        const academyCards = document.querySelectorAll('.course-card');
+        const mobileFilterBtn = document.getElementById('mobile-filter-btn');
+        const mobileFilterList = document.getElementById('mobile-filter-list');
+        const mobileFilterItems = document.querySelectorAll('.mobile-dropdown-item');
+
+        // Logic for filtering
+        function applyFilter(category) {
+             academyCards.forEach(card => {
+                const cardCat = card.getAttribute('data-category');
+                if (category === 'all' || cardCat === category) {
+                    card.style.display = 'flex';
+                    if(isTurboMode) {
+                        card.style.animation = 'none';
+                        void card.offsetHeight;
+                        card.style.animation = 'slideUp 0.5s var(--ease-out-expo) forwards';
+                    }
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Desktop Clicks
+        academyFilters.forEach(filter => {
+            filter.addEventListener('click', function() {
+                academyFilters.forEach(f => f.classList.remove('active')); 
+                this.classList.add('active'); 
+                const category = this.getAttribute('data-filter');
+                applyFilter(category);
+                
+                // Sync Mobile State
+                mobileFilterItems.forEach(i => {
+                    if(i.getAttribute('data-filter') === category) i.classList.add('active');
+                    else i.classList.remove('active');
+                });
+                mobileFilterBtn.querySelector('span').innerHTML = `<i class="ph-fill ph-funnel"></i> Filtrar: ${this.innerText.trim()}`;
+            });
+        });
+
+        // Mobile Dropdown Toggle
+        mobileFilterBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mobileFilterList.classList.toggle('active');
+        });
+
+        // Mobile Item Clicks
+        mobileFilterItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                mobileFilterItems.forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                const category = this.getAttribute('data-filter');
+                applyFilter(category);
+                mobileFilterList.classList.remove('active');
+                mobileFilterBtn.querySelector('span').innerHTML = `<i class="ph-fill ph-funnel"></i> Filtrar: ${this.innerText.trim()}`;
+                
+                // Sync Desktop
+                academyFilters.forEach(f => {
+                    if(f.getAttribute('data-filter') === category) f.classList.add('active');
+                    else f.classList.remove('active');
+                });
+            });
+        });
+
+        document.addEventListener('click', () => {
+            mobileFilterList.classList.remove('active');
+        });
+
+        // NEWS LOGIC
+        const allNews = [
+            {
+                title: "A Nova Era da Tecnologia Militar na RCC",
+                img: "https://i.imgur.com/1DcFE9V.png",
+                tag: "TECNOLOGIA",
+                author: "Gen. Silva",
+                authorUser: "ofranco6830",
+                datetime: "22 OUT - 14:30",
+                metaTime: "2 horas atrás",
+                content: `<p>A Polícia RCC acaba de dar um passo gigantesco rumo ao futuro com a implementação do sistema WaveX.</p><p>Este sistema integra inteligência artificial, monitoramento em tempo real e uma plataforma de ensino adaptativa para transformar a maneira como os oficiais são treinados.</p><p>O Comandante em Chefe afirmou: 'É um marco histórico. Estamos preparados para os desafios da próxima década.'</p>`
+            },
+            {
+                title: "Mudanças no Código Penal da Polícia",
+                img: "https://i.imgur.com/GaYCrP0.png",
+                tag: "LEGISLAÇÃO",
+                author: "Ten. Oliveira",
+                authorUser: "Frank",
+                datetime: "19 OUT",
+                metaTime: "19 OUT",
+                content: `<p>O alto comando ratificou as alterações no Código Penal Militar. As novas regras visam maior agilidade nos processos disciplinares e clareza nas punições.</p>`
+            },
+            {
+                title: "O futuro pertence aos que se preparam hoje",
+                img: "https://i.imgur.com/BJaLvPZ.png",
+                tag: "ENTREVISTA",
+                author: "Maj. Costa",
+                authorUser: "System",
+                datetime: "21 OUT",
+                metaTime: "21 OUT",
+                content: `<p>Em conversa exclusiva, o Major discutiu os pilares da nova liderança.</p>`
+            },
+            {
+                title: "Lista de Policiais Certificados: CFE",
+                img: "https://i.imgur.com/GaYCrP0.png",
+                tag: "RESULTADOS",
+                author: "Cap. Souza",
+                authorUser: ",youiz",
+                datetime: "20 OUT",
+                metaTime: "20 OUT",
+                content: `<p>Confira a lista oficial dos aprovados.</p>`
+            }
+        ];
+
+        let filteredNews = allNews.slice();
+        let currentNewsIndex = 0;
+        const newsLayoutWrapper = document.getElementById('news-layout');
+        const featuredEl = document.getElementById('news-featured');
+        const sidebarEl = document.getElementById('news-sidebar');
+        const searchInput = document.getElementById('news-search');
+        const emptyNewsMsg = document.getElementById('news-empty-message');
+
+        function renderNews() {
+            if (!filteredNews.length) {
+                featuredEl.style.display = 'none';
+                sidebarEl.innerHTML = '';
+                emptyNewsMsg.style.display = 'block';
+                return;
+            }
+            emptyNewsMsg.style.display = 'none';
+            featuredEl.style.display = 'block';
+            
+            if (currentNewsIndex >= filteredNews.length) currentNewsIndex = 0;
+            if (currentNewsIndex < 0) currentNewsIndex = filteredNews.length - 1;
+            
+            const featured = filteredNews[currentNewsIndex];
+            
+            featuredEl.setAttribute('data-title', featured.title);
+            featuredEl.setAttribute('data-img', featured.img);
+            featuredEl.setAttribute('data-tag', featured.tag);
+            featuredEl.setAttribute('data-author', featured.author);
+            featuredEl.setAttribute('data-author-user', featured.authorUser);
+            featuredEl.setAttribute('data-datetime', featured.datetime);
+            featuredEl.setAttribute('data-content', featured.content);
+            
+            featuredEl.querySelector('img').src = featured.img;
+            featuredEl.querySelector('.news-cat-badge').innerText = featured.tag;
+            featuredEl.querySelector('.news-featured-title').innerText = featured.title;
+            featuredEl.querySelector('.news-meta').innerHTML = `
+                <span><i class="ph-fill ph-user-circle"></i> ${featured.author}</span>
+                <span><i class="ph-fill ph-clock"></i> ${featured.metaTime}</span>
+            `;
+
+            let htmlSidebar = '';
+            const sidebarCount = Math.min(3, Math.max(0, filteredNews.length - 1));
+            
+            for (let i = 1; i <= sidebarCount; i++) {
+                const idx = (currentNewsIndex + i) % filteredNews.length;
+                const n = filteredNews[idx];
+                htmlSidebar += `
+                    <div class="news-side-card news-trigger"
+                         data-title="${n.title}"
+                         data-img="${n.img}"
+                         data-tag="${n.tag}"
+                         data-author="${n.author}"
+                         data-author-user="${n.authorUser}"
+                         data-datetime="${n.datetime}"
+                         data-content="${n.content}">
+                        <img src="${n.img}" class="news-side-img" alt="">
+                        <div class="news-side-info">
+                            <span class="news-side-tag">${n.tag}</span>
+                            <h4 class="news-side-title">${n.title}</h4>
+                            <span class="news-side-date">${n.metaTime}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            sidebarEl.innerHTML = htmlSidebar;
+        }
+
+        function smoothChangeNews(direction) {
+            if (filteredNews.length <= 1) return;
+            newsLayoutWrapper.classList.add('news-changing');
+            setTimeout(() => {
+                if (direction === 'prev') {
+                    currentNewsIndex = (currentNewsIndex - 1 + filteredNews.length) % filteredNews.length;
+                } else {
+                    currentNewsIndex = (currentNewsIndex + 1) % filteredNews.length;
+                }
+                renderNews();
+                newsLayoutWrapper.classList.remove('news-changing');
+            }, 220);
+        }
+
+        document.getElementById('news-prev').addEventListener('click', (e) => { e.stopPropagation(); smoothChangeNews('prev'); });
+        document.getElementById('news-next').addEventListener('click', (e) => { e.stopPropagation(); smoothChangeNews('next'); });
+
+        function applyNewsSearch(term) {
+            const q = term.trim().toLowerCase();
+            if (!q) filteredNews = allNews.slice();
+            else filteredNews = allNews.filter(n => 
+                n.title.toLowerCase().includes(q) ||
+                n.tag.toLowerCase().includes(q) ||
+                n.author.toLowerCase().includes(q)
+            );
+            currentNewsIndex = 0;
+            renderNews();
+        }
+
+        searchInput.addEventListener('input', (e) => applyNewsSearch(e.target.value));
+
+        const newsModal = document.getElementById('news-modal'); 
+        const closeNews = document.getElementById('modal-close-news');
+
+        function openNewsFromElement(item) {
+            document.getElementById('modal-title').innerHTML = item.getAttribute('data-title');
+            document.getElementById('modal-image').src = item.getAttribute('data-img');
+            document.getElementById('modal-tag').innerText = item.getAttribute('data-tag');
+            document.getElementById('modal-content').innerHTML = item.getAttribute('data-content');
+            const username = item.getAttribute('data-author-user');
+            document.getElementById('modal-author').innerHTML = `
+                <img src="https://www.habbo.com.br/habbo-imaging/avatarimage?user=${username}&direction=2&head_direction=3&gesture=sml&size=s&headonly=1">
+                ${item.getAttribute('data-author')}
+            `;
+            document.getElementById('modal-date').innerHTML = item.getAttribute('data-datetime');
+            newsModal.classList.add('active');
+        }
+
+        newsLayoutWrapper.addEventListener('click', (e) => {
+            const trigger = e.target.closest('.news-trigger');
+            if (!trigger) return;
+            openNewsFromElement(trigger);
+        });
+
+        closeNews.addEventListener('click', () => newsModal.classList.remove('active'));
+        newsModal.addEventListener('click', (e) => { if (e.target === newsModal) newsModal.classList.remove('active'); });
+
+        /* --- LETTER MODAL LOGIC --- */
+        const letterModal = document.getElementById('letter-modal');
+        const closeLetter = document.getElementById('close-letter');
+        const wallNotes = document.querySelectorAll('.wall-note');
+
+        // Apply listeners to existing static notes
+        wallNotes.forEach(note => {
+            note.addEventListener('click', () => {
+                const user = note.getAttribute('data-user');
+                const role = note.getAttribute('data-role');
+                const msg = note.getAttribute('data-msg');
+                let avatarUrl = note.getAttribute('data-avatar');
+                
+                // ---  HEAD do LETTER HEADER ---
+                // Para pegar apenas a head, usa-se o headonly=1 e direction=3 geralmente para ficar frontal
+                const headAvatarUrl = `https://www.habbo.com.br/habbo-imaging/avatarimage?user=${user}&direction=3&head_direction=3&gesture=sml&size=m&headonly=1`;
+
+                document.getElementById('letter-author').textContent = user;
+                document.getElementById('letter-role').textContent = role;
+                document.getElementById('letter-text').innerHTML = msg;
+                document.getElementById('letter-signature').textContent = user;
+                
+                const imgEl = document.getElementById('letter-avatar-img');
+                imgEl.src = headAvatarUrl; 
+                
+                // Fallback for modal
+                imgEl.onerror = function() {
+                   this.onerror = null;
+                   this.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTkuMDkgOWEzIDMgMCAwIDEgNS44MyAxYzAgMi0zIDMtMyAzIi8+PGxpbmUgeDE9IjEyIiB5MT0iMTciIHgyPSIxMi4wMSIgeTI9IjE3Ii8+PC9zdmc+";
+                };
+
+                letterModal.classList.add('active');
+            });
+        });
+
+        closeLetter.addEventListener('click', () => {
+            letterModal.classList.remove('active');
+        });
+
+        letterModal.addEventListener('click', (e) => {
+            if (e.target === letterModal) letterModal.classList.remove('active');
+        });
+
+        renderNews();
+    </script>
+</body>
+</html>
